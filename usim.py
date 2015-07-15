@@ -234,11 +234,12 @@ def monitor():
 				warnings.simplefilter("ignore")
 				mp.Process(target=process, args=(q, com, res.group(0))).start()
 			if not quit_proc.is_alive():
-				log("Quitting")
+				log("Stopping main process")
 				return
 			while q.qsize() > 0:
 				item = q.get()
 				if item == 'clear':
+					log("Clearing list of started tasks")
 					started = []
 				elif item in started:
 					started.remove(item)
@@ -256,6 +257,7 @@ def wait(q):
 	while True:
 		inp = msvcrt.getch()
 		if inp == b'q':
+			log("Quit")
 			break
 		if inp == b'c':
 			q.put('clear')
