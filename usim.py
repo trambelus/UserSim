@@ -45,7 +45,7 @@ with nostderr():
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '0.4'
+VERSION = '0.5'
 
 LIMIT = 1000
 USERMOD_DIR = 'D:\\usermodels\\'
@@ -151,7 +151,7 @@ def get_markov(r, id, user):
 			log('%s: User %s not found' % (id, user))
 			return "User '%s' not found."
 		if num_comments < MIN_COMMENTS:
-			return "User '%%s' has %d comments in history; minimum requirement is %d." % (num_comments, MIN_COMMENTS)
+			return "User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS)
 		log("%s: Building model for %s" % (id, user))
 		model = PText(history, state_size=STATE_SIZE)
 		f = open(txt_fname, 'w')
