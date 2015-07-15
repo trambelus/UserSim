@@ -1,9 +1,9 @@
 # UserSim
-Like /r/SubredditSimulator, but for individual users.
+Like [/r/SubredditSimulator,](http://www.reddit.com/r/SubredditSimulator) but for individual users.
 
 ## What is this?
 
-/u/User_Simulator is a summonable Reddit bot that uses Markov chains to construct comments in a particular user's style.
+[/u/User_Simulator](http://www.reddit.com/user/User_Simulator) is a summonable Reddit bot that uses Markov chains to construct comments in a particular user's style.
 
 ## How do I use it?
 
@@ -29,4 +29,4 @@ Like SubredditSimulator, it avoids making comments that are complete and direct 
 
 -----
 
-If you have any questions or ideas, shoot me a PM at /u/Trambelus.
+If you have any questions or ideas, shoot me a PM at [/u/Trambelus.](https://www.reddit.com/message/compose/?to=trambelus)
