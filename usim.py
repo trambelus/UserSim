@@ -204,13 +204,15 @@ def monitor():
 	Main loop. Looks through username notifications, comment replies, and whatever else,
 	and launches a single process for every new request it finds.
 	"""
+	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, main thread" % VERSION)
+
 	started = []
 	q = mp.Queue()
 	quit_proc = mp.Process(target=wait, args=(q,))
 	quit_proc.start()
 	req_pat = re.compile(r"\+(\s)?/u/%s\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
 	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v0.3 by /u/Trambelus, main thread")
+		r = get_r()
 	t0 = time.time()
 	log('Restarted')
 	while True:
@@ -218,13 +220,11 @@ def monitor():
 			# Every 55 minutes, refresh the login.
 			if (time.time() - t0 > 55*60):
 				with silent():
-					r = rlogin.get_auth_r(USER, APP, VERSION)
+					r = get_r()
 				log("Refreshed login")
 				t0 = time.time()
 			mentions = r.get_inbox()
 			for com in mentions:
-				if com.author == None:
-					continue # Extreme edge case: they deleted their comment before the reply could process
 				res = re.search(req_pat, com.body.lower())
 				if res == None:
 					continue # We were mentioned but it's not a proper request, move on

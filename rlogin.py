@@ -38,7 +38,7 @@ def set_auth(r, app_name, username, version):
 	r.set_access_credentials({'flair','privatemessages','submit'}, token)
 	return token
 
-def get_auth_r(username, app_name, version, uas=None):
+def get_auth_r(username, app_name, version='1.0', uas=None):
 	[client_id, _, _] = find_app_info(app_name)
 	if uas == None:
 		uas = "Windows:{0}:{1} by {2}, id={3}".format(app_name, version, username, client_id)
