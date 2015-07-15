@@ -176,7 +176,7 @@ def process(q, com, val):
 		return
 	id = com.name
 	author = com.author.name if com.author else 'None'
-	target_user = val[val.rfind(' ')+1:]
+	target_user = val[val.rfind(' ')+1:].strip()
 	with silent():
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v0.3 by /u/Trambelus, operating on behalf of %s" % author)
 	if target_user[:3] == '/u/':
@@ -208,7 +208,7 @@ def monitor():
 	q = mp.Queue()
 	quit_proc = mp.Process(target=wait, args=(q,))
 	quit_proc.start()
-	req_pat = re.compile(r"\+(\s)?/u/%s\s(/u/)?[\w\d\-_]{3,20}" % USER.lower())
+	req_pat = re.compile(r"\+(\s)?/u/%s\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
 	with silent():
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v0.3 by /u/Trambelus, main thread")
 	t0 = time.time()
