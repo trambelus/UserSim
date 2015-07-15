@@ -30,7 +30,6 @@ def silent():
 
 import markovify
 import re
-import sqlite3
 with silent():
 	import praw
 import multiprocessing as mp
