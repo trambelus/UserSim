@@ -208,7 +208,7 @@ def monitor():
 	q = mp.Queue()
 	quit_proc = mp.Process(target=wait, args=(q,))
 	quit_proc.start()
-	req_pat = re.compile(r"\+/u/%s\s(/u/)?[\w\d\-_]{3,20}" % USER.lower())
+	req_pat = re.compile(r"\+(\s)?/u/%s\s(/u/)?[\w\d\-_]{3,20}" % USER.lower())
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v0.3 by /u/Trambelus, main thread")
 	t0 = time.time()
 	log('Restarted')
@@ -216,7 +216,9 @@ def monitor():
 		try:
 			# Every 55 minutes, refresh the login.
 			if (time.time() - t0 > 55*60):
-				r = rlogin.get_auth_r(USER, APP, VERSION)
+				with silent():
+					r = rlogin.get_auth_r(USER, APP, VERSION)
+				log("Refreshed login")
 				t0 = time.time()
 			mentions = r.get_inbox()
 			for com in mentions:
