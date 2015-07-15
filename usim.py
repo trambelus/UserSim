@@ -46,6 +46,7 @@ with nostderr():
 
 USER = 'User_Simulator'
 APP = 'Simulator'
+VERSION = '0.4'
 
 LIMIT = 1000
 USERMOD_DIR = 'D:\\usermodels\\'
@@ -178,7 +179,7 @@ def process(com, val):
 	author = com.author.name if com.author else 'None'
 	target_user = val[val.find(' ')+1:]
 	with silent():
-		r = rlogin.get_auth_r(USER, APP, "0.3", uas="Windows:User Simulator/v0.3 by /u/Trambelus, operating on behalf of %s" % author)
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v0.3 by /u/Trambelus, operating on behalf of %s" % author)
 	if target_user[:3] == '/u/':
 		target_user = target_user[3:]
 	log('%s: started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
@@ -205,7 +206,7 @@ def monitor():
 	quit_proc = mp.Process(target=wait, args=(q,))
 	quit_proc.start()
 	req_pat = re.compile(r"\+/u/%s\s(/u/)?[\w\d\-_]{3,20}" % USER.lower())
-	r = rlogin.get_auth_r(USER, APP)
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v0.3 by /u/Trambelus, main thread")
 	t0 = time.time()
 	log('Restarted')
 	while True:
@@ -221,7 +222,7 @@ def monitor():
 				res = re.search(req_pat, com.body.lower())
 				if res == None:
 					continue # We were mentioned but it's not a proper request, move on
-				if USER in [rep.author.name for rep in com.replies if rep.author != None]:
+				if USER.lower() in [rep.author.name.lower() for rep in com.replies if rep.author != None]:
 					continue # We've already hit this one, move on
 				if com.name in started:
 					continue # We've already started on this one, move on
@@ -231,7 +232,7 @@ def monitor():
 			if not quit_proc.is_alive():
 				log("Quitting")
 				return
-			if len(q) > 0:
+			if q.qsize() > 0:
 				if q.get() == 'clear':
 					started = []
 			time.sleep(1)
