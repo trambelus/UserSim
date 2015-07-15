@@ -168,7 +168,7 @@ def get_markov(r, id, user):
 	else:
 		return from_scratch()
 
-def process(com, val):
+def process(q, com, val):
 	"""
 	Multiprocessing target. Gets the Markov model, uses it to get a sentence, and posts that as a reply.
 	"""
@@ -184,17 +184,21 @@ def process(com, val):
 		target_user = target_user[3:]
 	log('%s: started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
 	model = get_markov(r, id, target_user)
-	if isinstance(model, str):
-		com.reply(model % target_user)
-	else:
-		reply_r = model.make_sentence(tries=100)
-		if reply_r == None:
-			com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
-			return
-		reply = unidecode(reply_r)
-		log("%s: Replying:\n%s" % (id, reply))
-		com.reply(reply)
-	log('%s: Finished' % id)
+	try:
+		if isinstance(model, str):
+			com.reply(model % target_user)
+		else:
+			reply_r = model.make_sentence(tries=100)
+			if reply_r == None:
+				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
+				return
+			reply = unidecode(reply_r)
+			log("%s: Replying:\n%s" % (id, reply))
+			com.reply(reply)
+		log('%s: Finished' % id)
+	except praw.errors.RateLimitExceeded as ex:
+		log(id + ": Rate limit exceeded: " + str(ex))
+		q.put(id)
 
 def monitor():
 	"""
@@ -228,13 +232,16 @@ def monitor():
 					continue # We've already started on this one, move on
 				started.append(com.name)
 				warnings.simplefilter("ignore")
-				mp.Process(target=process, args=(com, res.group(0))).start()
+				mp.Process(target=process, args=(q, com, res.group(0))).start()
 			if not quit_proc.is_alive():
 				log("Quitting")
 				return
-			if q.qsize() > 0:
-				if q.get() == 'clear':
+			while q.qsize() > 0:
+				item = q.get()
+				if item == 'clear':
 					started = []
+				elif item in started:
+					started.remove(item)
 			time.sleep(1)
 		# General-purpose catch to make the script unbreakable.
 		except Exception as ex:
