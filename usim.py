@@ -216,7 +216,7 @@ def monitor():
 		try:
 			# Every 55 minutes, refresh the login.
 			if (time.time() - t0 > 55*60):
-				r = rlogin.get_auth_r(USER, APP)
+				r = rlogin.get_auth_r(USER, APP, VERSION)
 				t0 = time.time()
 			mentions = r.get_inbox()
 			for com in mentions:
