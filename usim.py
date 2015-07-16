@@ -53,6 +53,7 @@ MIN_COMMENTS = 50	# Users with less than this number of comments won't be attemp
 # The Markov chains usually turn out a lot worse with less input.
 # TODO: detect the entropy or uniqueness of the corpus instead of raw length.
 # Anyone who knows a good way to do this, PM /u/Trambelus if you like.
+TRIES = 1000
 
 USERSET = set(string.ascii_letters+string.digits+'-_')
 STATE_SIZE = 2
@@ -187,7 +188,7 @@ def process(q, com, val):
 		if isinstance(model, str):
 			com.reply(model % target_user)
 		else:
-			reply_r = model.make_sentence(tries=100)
+			reply_r = model.make_sentence(tries=TRIES)
 			if reply_r == None:
 				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
 				return
