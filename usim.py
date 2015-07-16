@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '0.8.1'
+VERSION = '1.0.1'
 
 import sys
 import contextlib
@@ -46,6 +46,7 @@ import msvcrt
 import warnings
 with nostderr():
 	import nltk
+import random
 
 LIMIT = 1000
 USERMOD_DIR = 'D:\\usermodels\\'
@@ -115,11 +116,19 @@ def get_history(r, user, limit=LIMIT):
 		redditor = r.get_redditor(user)
 		comments = redditor.get_comments(limit=limit)
 		body = []
+		total_sentences = 0
 		for c in comments:
-			body.append(c.body)
+			if not c.distinguished:
+				body.append(c.body)
+				try:
+					total_sentences += len(markovify.split_into_sentences(c.body))
+				except Exception:
+					# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
+					total_sentences += 1
 		num_comments = len(body)
+		sentence_avg = total_sentences / num_comments if num_comments > 0 else 0
 		body = ' '.join(body)
-		return (body, num_comments)
+		return (body, num_comments, sentence_avg)
 	except praw.errors.NotFound:
 		return (None, None)
 
@@ -130,38 +139,50 @@ def get_markov(r, id, user):
 	"""
 	txt_fname = USERMOD_DIR + '%s.txt' % user
 	json_fname = USERMOD_DIR + '%s.json' % user
+	info_fname = USERMOD_DIR + '%s.info' % user
 	# Stores two files: some-reddit-user.txt for the raw corpus,
 	# and some-reddit-user.json for the structure holding the Markov state model.
 	def from_cache():
-		log("%s: Reading cache for %s" % (id, user))
+		#log("%s: Reading cache for %s" % (id, user))
 		f_txt = open(txt_fname, 'r')
 		f_json = open(json_fname, 'r')
+		f_info = open(info_fname, 'r')
 		text = ''.join(f_txt.readlines())
 		json = f_json.readlines()[0]
+		try:
+			sentence_avg = int(f_info.readlines()[0])
+		except ValueError:
+			sentence_avg = 1
 		if text == '' or json == []:
 			return from_scratch()
 		f_txt.close()
 		f_json.close()
-		return PText(text, state_size=STATE_SIZE, chain=markovify.Chain.from_json(json))
+		return (PText(text, state_size=STATE_SIZE, chain=markovify.Chain.from_json(json)), sentence_avg)
 
 	def from_scratch():
 		# No cache was found: build the model from scratch
-		log("%s: Getting history for %s" % (id, user))
-		(history, num_comments) = get_history(r, user)
+		#log("%s: Getting history for %s" % (id, user))
+		(history, num_comments, sentence_avg) = get_history(r, user)
 		if history == None:
 			log('%s: User %s not found' % (id, user))
-			return "User '%s' not found."
+			return ("User '%s' not found.", 0)
 		if num_comments < MIN_COMMENTS:
-			return "User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS)
-		log("%s: Building model for %s" % (id, user))
-		model = PText(history, state_size=STATE_SIZE)
+			return ("User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS), 0)
+		#log("%s: Building model for %s" % (id, user))
+		try:
+			model = PText(history, state_size=STATE_SIZE)
+		except IndexError:
+			return ("Error: User '%s' is too dank to simulate.", 0)
 		f = open(txt_fname, 'w')
 		f.write(unidecode(history))
 		f.close()
 		f = open(json_fname, 'w')
 		f.write(model.chain.to_json())
 		f.close()
-		return model
+		f = open(info_fname, 'w')
+		f.write(str(int(sentence_avg)))
+		f.close()
+		return (model, int(sentence_avg))
 
 	if os.path.isfile(txt_fname) and os.path.isfile(json_fname):
 		return from_cache()
@@ -184,20 +205,27 @@ def process(q, com, val):
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
 	if target_user[:3] == '/u/':
 		target_user = target_user[3:]
-	log('%s: Started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
-	model = get_markov(r, id, target_user)
+	#log('%s: Started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
+	(model, sentence_avg) = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
 			com.reply(model % target_user)
+			log('%s by %s in %s on %s:\n%s\n' % (target_user, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), model % target_user))
 		else:
-			reply_r = model.make_sentence(tries=TRIES)
-			if reply_r == None:
-				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
-				return
+			reply_r = []
+			for _ in range(sentence_avg):
+				tmp_s = model.make_sentence(tries=TRIES)
+				if tmp_s == None:
+					com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
+					return
+				reply_r.append(tmp_s)
+			reply_r = ' '.join(reply_r)
 			reply = unidecode(reply_r)
-			log("%s: Replying:\n%s" % (id, reply))
+			if com.subreddit.display_name == 'EVEX':
+				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
+			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
 			com.reply(reply + '\n\n------\n\n ~ ' + target_user)
-		log('%s: Finished' % id)
+		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
 		q.put(id)
@@ -233,8 +261,11 @@ def monitor():
 				res = re.search(req_pat, com.body.lower())
 				if res == None:
 					continue # We were mentioned but it's not a proper request, move on
-				if USER.lower() in [rep.author.name.lower() for rep in com.replies if rep.author != None]:
-					continue # We've already hit this one, move on
+				try:
+					if USER.lower() in [rep.author.name.lower() for rep in com.replies if rep.author != None]:
+						continue # We've already hit this one, move on
+				except praw.errors.Forbidden:
+					continue
 				if com.name in started:
 					continue # We've already started on this one, move on
 				started.append(com.name)
@@ -253,7 +284,7 @@ def monitor():
 			time.sleep(1)
 		# General-purpose catch to make the script unbreakable.
 		except Exception as ex:
-			log("Error in main process: %s" % ex)
+			log(str(type(ex)) + ": " + str(ex))
 
 def wait(q):
 	"""
@@ -285,11 +316,25 @@ def manual(user, num):
 	for i in range(num):
 		log(unidecode(model.make_sentence()))
 
+def upgrade():
+	files = [f[:-4] for f in os.listdir(USERMOD_DIR) if f[-4:] == '.txt']
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, upgrading cache" % VERSION)
+	for user in files:
+		info_fname = USERMOD_DIR + user + '.info'
+		if os.path.isfile(info_fname):
+			continue
+		(history, num_comments, sentence_avg) = get_history(r, user)
+		print("%s: average %d across %d comments" % (user, int(sentence_avg), num_comments))
+		with open(info_fname, 'w') as f:
+			f.write(str(int(sentence_avg)))
+
 if __name__ == '__main__':
 	if len(sys.argv) >= 3 and sys.argv[1].lower() == 'manual':
 		num = 1
 		if len(sys.argv) == 4:
 			num = int(sys.argv[3])
 		manual(sys.argv[2], num)
+	elif len(sys.argv) > 1 and sys.argv[1].lower() == 'upgrade':
+		upgrade()
 	else:
 		monitor()
