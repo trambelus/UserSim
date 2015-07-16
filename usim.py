@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '0.8'
+VERSION = '0.8.1'
 
 import sys
 import contextlib
@@ -201,6 +201,8 @@ def process(q, com, val):
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
 		q.put(id)
+	except praw.errors.Forbidden:
+		log("%s: Could not reply")
 
 def monitor():
 	"""
