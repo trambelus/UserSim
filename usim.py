@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '0.7'
+VERSION = '0.8'
 
 import sys
 import contextlib
@@ -194,7 +194,7 @@ def process(q, com, val):
 				return
 			reply = unidecode(reply_r)
 			log("%s: Replying:\n%s" % (id, reply))
-			com.reply(reply)
+			com.reply(reply + '\n------\n - ' + target_user)
 		log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
