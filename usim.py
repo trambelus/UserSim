@@ -178,6 +178,8 @@ def process(q, com, val):
 	id = com.name
 	author = com.author.name if com.author else 'None'
 	target_user = val[val.rfind(' ')+1:].strip()
+	idx = com.body.lower().find(target_user.lower())
+	target_user = com.body[idx:idx+len(target_user)]
 	with silent():
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
 	if target_user[:3] == '/u/':
@@ -194,7 +196,7 @@ def process(q, com, val):
 				return
 			reply = unidecode(reply_r)
 			log("%s: Replying:\n%s" % (id, reply))
-			com.reply(reply + '\n------\n - ' + target_user)
+			com.reply(reply + '\n\n------\n\n ~ ' + target_user)
 		log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
