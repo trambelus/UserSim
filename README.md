@@ -29,6 +29,11 @@ It uses [markovify](https://github.com/jsvine/markovify), like SubredditSimulato
 
 Like SubredditSimulator, it avoids making comments that are complete and direct quotes of the user. Each comment it makes will be stitched together from at least two of the source user's comments.
 
+
+### I got a really dumb reply. This is dumb.
+
+Yeah, it's a bot and it generates its responses randomly; it doesn't know what's funny and what's not. Sometimes its responses are hilariously absurd; other times they're boring and weird and completely unfunny. You're welcome to page it again for a new response if you don't like the last one you got.
+
 -----
 
 If you have any questions or ideas, shoot me a PM at [/u/Trambelus.](https://www.reddit.com/message/compose/?to=trambelus)
