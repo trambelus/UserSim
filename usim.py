@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+USER = 'User_Simulator'
+APP = 'Simulator'
+VERSION = '0.7'
+
 import sys
 import contextlib
 
@@ -43,10 +47,6 @@ import warnings
 with nostderr():
 	import nltk
 
-USER = 'User_Simulator'
-APP = 'Simulator'
-VERSION = '0.5'
-
 LIMIT = 1000
 USERMOD_DIR = 'D:\\usermodels\\'
 MIN_COMMENTS = 50	# Users with less than this number of comments won't be attempted.
@@ -85,7 +85,7 @@ class PText(markovify.Text):
 		the type of punctuation that would look strange on its own
 		in a randomly-generated sentence. 
 		"""
-		emote_pat = re.compile(r"\[.*?\]\(\/.+?\)")
+		emote_pat = re.compile(r"\[\]\(\/.+?\)")
 		reject_pat = re.compile(r"(^')|('$)|\s'|'\s|([\"(\(\)\[\])])")
 		# Decode unicode, mainly to normalize fancy quotation marks
 		decoded = unidecode(sentence)
@@ -178,10 +178,10 @@ def process(q, com, val):
 	author = com.author.name if com.author else 'None'
 	target_user = val[val.rfind(' ')+1:].strip()
 	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v0.3 by /u/Trambelus, operating on behalf of %s" % author)
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
 	if target_user[:3] == '/u/':
 		target_user = target_user[3:]
-	log('%s: started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
+	log('%s: Started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
 	model = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
@@ -274,7 +274,9 @@ def manual(user, num):
 	They never knew.
 	Don't tell them.
 	"""
-	model = get_markov(user)
+	with silent():
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating in manual mode" % VERSION)
+	model = get_markov(r, 'manual', user)
 	for i in range(num):
 		log(unidecode(model.make_sentence()))
 
