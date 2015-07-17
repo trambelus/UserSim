@@ -3,7 +3,7 @@ Like [/r/SubredditSimulator,](http://www.reddit.com/r/SubredditSimulator) but fo
 
 ### What is this?
 
-[/u/User_Simulator](http://www.reddit.com/user/User_Simulator) is a summonable Reddit bot that uses Markov chains to construct comments in a particular user's style.
+[/u/User_Simulator](http://www.reddit.com/user/User_Simulator) is a summonable Reddit bot that reads a particular user's last 1000 comments and uses Markov chains to construct comments in that user's style.
 
 ### How do I use it?
 
