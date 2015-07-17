@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.0.1'
+VERSION = '1.1.1'
 
 import sys
 import contextlib
@@ -59,6 +59,7 @@ TRIES = 1000
 USERSET = set(string.ascii_letters+string.digits+'-_')
 STATE_SIZE = 2
 LOGFILE = 'usim.log'
+INFO_URL = 'https://github.com/trambelus/UserSim'
 
 in_userset = lambda s: all([el in USERSET for el in s])
 
@@ -130,7 +131,7 @@ def get_history(r, user, limit=LIMIT):
 		body = ' '.join(body)
 		return (body, num_comments, sentence_avg)
 	except praw.errors.NotFound:
-		return (None, None)
+		return (None, None, None)
 
 def get_markov(r, id, user):
 	"""
@@ -215,7 +216,7 @@ def process(q, com, val):
 			reply_r = []
 			for _ in range(sentence_avg):
 				tmp_s = model.make_sentence(tries=TRIES)
-				if tmp_s == None:
+				if tmp_s == None or sentence_avg == 0:
 					com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
 					return
 				reply_r.append(tmp_s)
@@ -224,7 +225,7 @@ def process(q, com, val):
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
-			com.reply(reply + '\n\n------\n\n ~ ' + target_user)
+			com.reply('%s\n\n ~ %s\n\n-----\n\n[^^Info](%s)' % (reply,target_user,INFO_URL))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
