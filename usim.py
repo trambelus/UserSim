@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.1.1'
+VERSION = '1.3.0'
 
 import sys
 import contextlib
@@ -199,6 +199,7 @@ def process(q, com, val):
 		return
 	id = com.name
 	author = com.author.name if com.author else 'None'
+	sub = com.subreddit.display_name
 	target_user = val[val.rfind(' ')+1:].strip()
 	idx = com.body.lower().find(target_user.lower())
 	target_user = com.body[idx:idx+len(target_user)]
@@ -216,22 +217,27 @@ def process(q, com, val):
 			reply_r = []
 			for _ in range(sentence_avg):
 				tmp_s = model.make_sentence(tries=TRIES)
-				if tmp_s == None or sentence_avg == 0:
+				if tmp_s == None:
 					com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
 					return
 				reply_r.append(tmp_s)
+			if sentence_avg == 0:
+				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
+				return
 			reply_r = ' '.join(reply_r)
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
-			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
+			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, sub, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
 			com.reply('%s\n\n ~ %s\n\n-----\n\n[^^Info](%s)' % (reply,target_user,INFO_URL))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
 		q.put(id)
 	except praw.errors.Forbidden:
-		log("%s: Could not reply")
+		log("Could not reply to comment by %s in %s" % (author, sub))
+	except praw.errors.APIException:
+		log("Parent comment by %s in %s was deleted" % (author, sub))
 
 def monitor():
 	"""
@@ -244,7 +250,7 @@ def monitor():
 	q = mp.Queue()
 	quit_proc = mp.Process(target=wait, args=(q,))
 	quit_proc.start()
-	req_pat = re.compile(r"\+(\s)?/u/%s\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
+	req_pat = re.compile(r"\+(\s)?/u/%s\s?(\[.\])?\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
 	with silent():
 		r = get_r()
 	t0 = time.time()
@@ -313,8 +319,8 @@ def manual(user, num):
 	"""
 	with silent():
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating in manual mode" % VERSION)
-	model = get_markov(r, 'manual', user)
-	for i in range(num):
+	(model, sentence_avg) = get_markov(r, 'manual', user)
+	for i in range(sentence_avg):
 		log(unidecode(model.make_sentence()))
 
 def upgrade():
