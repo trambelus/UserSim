@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.3.0'
+VERSION = '1.4.0'
 
 import sys
 import contextlib
@@ -88,7 +88,7 @@ class PText(markovify.Text):
 		the type of punctuation that would look strange on its own
 		in a randomly-generated sentence. 
 		"""
-		emote_pat = re.compile(r"\[\]\(\/.+?\)")
+		emote_pat = re.compile(r"\[.+?\]\(\/.+?\)")
 		reject_pat = re.compile(r"(^')|('$)|\s'|'\s|([\"(\(\)\[\])])")
 		# Decode unicode, mainly to normalize fancy quotation marks
 		decoded = unidecode(sentence)
