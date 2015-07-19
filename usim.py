@@ -207,7 +207,7 @@ def process(q, com, val):
 	val = val.replace('\n',' ')
 	val = val.replace('\t',' ')
 	target_user = val[val.rfind(' ')+1:].strip()
-	if '+/u/%s' % USER in target_user:
+	if ('+/u/%s' % USER).lower() in target_user.lower():
 		com.reply("User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
 		return
 	idx = com.body.lower().find(target_user.lower())
