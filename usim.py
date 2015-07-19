@@ -133,7 +133,7 @@ def get_history(r, user, limit=LIMIT):
 					# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
 					total_sentences += 1
 		num_comments = len(body)
-		if num_comments > MIN_COMMENTS and recursion_testing:
+		if num_comments >= MIN_COMMENTS and recursion_testing:
 			return (0, 0, 0)
 		sentence_avg = total_sentences / num_comments if num_comments > 0 else 0
 		body = ' '.join(body)
