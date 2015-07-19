@@ -200,6 +200,8 @@ def process(q, com, val):
 	id = com.name
 	author = com.author.name if com.author else 'None'
 	sub = com.subreddit.display_name
+	val = val.replace('\n',' ')
+	val = val.replace('\t',' ')
 	target_user = val[val.rfind(' ')+1:].strip()
 	idx = com.body.lower().find(target_user.lower())
 	target_user = com.body[idx:idx+len(target_user)]
@@ -290,6 +292,8 @@ def monitor():
 					started.remove(item)
 			time.sleep(1)
 		# General-purpose catch to make the script unbreakable.
+		except praw.errors.InvalidComment:
+			continue # This one was completely trashing the console, so handle it silently.
 		except Exception as ex:
 			log(str(type(ex)) + ": " + str(ex))
 
