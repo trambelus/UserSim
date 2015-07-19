@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.5.0'
+VERSION = '1.5.4'
 
 import sys
 import contextlib
@@ -206,6 +206,7 @@ def process(q, com, val):
 	sub = com.subreddit.display_name
 	val = val.replace('\n',' ')
 	val = val.replace('\t',' ')
+	val = val.replace(chr(160),' ')
 	target_user = val[val.rfind(' ')+1:].strip()
 	if ('+/u/%s' % USER).lower() in target_user.lower():
 		com.reply("User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
