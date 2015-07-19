@@ -23,7 +23,7 @@ It's probably running right now; give it a try!
 
 ### It didn't work for me. Why not?
 
-It only works on users that have fifty or more comments visible on their userpage, and if the user's comments have little variety (e.g. fifty of the exact same comment), then the bot might not be able to come up with a unique response.
+It only works on users that have 25 or more comments visible on their userpage, and if the user's comments have little variety (e.g. 25 of the exact same comment), then the bot might not be able to come up with a unique response.
 
 ### What libraries does it use?
 

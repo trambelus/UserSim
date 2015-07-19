@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.4.0'
+VERSION = '1.5.0'
 
 import sys
 import contextlib
@@ -50,7 +50,7 @@ import random
 
 LIMIT = 1000
 USERMOD_DIR = 'D:\\usermodels\\'
-MIN_COMMENTS = 50	# Users with less than this number of comments won't be attempted.
+MIN_COMMENTS = 25	# Users with less than this number of comments won't be attempted.
 # The Markov chains usually turn out a lot worse with less input.
 # TODO: detect the entropy or uniqueness of the corpus instead of raw length.
 # Anyone who knows a good way to do this, PM /u/Trambelus if you like.
