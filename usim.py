@@ -56,7 +56,7 @@ MIN_COMMENTS = 25	# Users with less than this number of comments won't be attemp
 # Anyone who knows a good way to do this, PM /u/Trambelus if you like.
 TRIES = 1000
 
-NO_REPLY = ['ploungersimulator']
+NO_REPLY = ['trollabot','ploungersimulator']
 STATE_SIZE = 2
 LOGFILE = 'usim.log'
 INFO_URL = 'https://github.com/trambelus/UserSim'
