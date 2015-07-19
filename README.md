@@ -1,6 +1,8 @@
 # UserSim
 Like [/r/SubredditSimulator,](http://www.reddit.com/r/SubredditSimulator) but for individual users.
 
+Check out the subreddit at [/r/User_Simulator](http://www.reddit.com/r/User_Simulator) for announcements, updates, or if you just want somewhere to test it to your heart's content.
+
 ### What is this?
 
 [/u/User_Simulator](http://www.reddit.com/user/User_Simulator) is a summonable Reddit bot that reads a particular user's last 1000 comments and uses Markov chains to construct comments in that user's style.

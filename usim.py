@@ -60,6 +60,7 @@ USERSET = set(string.ascii_letters+string.digits+'-_')
 STATE_SIZE = 2
 LOGFILE = 'usim.log'
 INFO_URL = 'https://github.com/trambelus/UserSim'
+SUB_URL = '/r/User_Simulator'
 
 in_userset = lambda s: all([el in USERSET for el in s])
 
@@ -231,7 +232,7 @@ def process(q, com, val):
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, sub, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
-			com.reply('%s\n\n ~ %s\n\n-----\n\n[^^Info](%s)' % (reply,target_user,INFO_URL))
+			com.reply('%s\n\n ~ %s\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (reply,target_user,INFO_URL,SUB_URL))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
