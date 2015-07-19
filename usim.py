@@ -56,7 +56,7 @@ MIN_COMMENTS = 25	# Users with less than this number of comments won't be attemp
 # Anyone who knows a good way to do this, PM /u/Trambelus if you like.
 TRIES = 1000
 
-USERSET = set(string.ascii_letters+string.digits+'-_')
+NO_REPLY = ['ploungersimulator']
 STATE_SIZE = 2
 LOGFILE = 'usim.log'
 INFO_URL = 'https://github.com/trambelus/UserSim'
@@ -65,7 +65,6 @@ SUB_URL = '/r/User_Simulator'
 def get_footer():
 	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
 
-in_userset = lambda s: all([el in USERSET for el in s])
 
 def log(*msg, file=None):
 	"""
