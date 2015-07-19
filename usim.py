@@ -62,6 +62,9 @@ LOGFILE = 'usim.log'
 INFO_URL = 'https://github.com/trambelus/UserSim'
 SUB_URL = '/r/User_Simulator'
 
+def get_footer():
+	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
+
 in_userset = lambda s: all([el in USERSET for el in s])
 
 def log(*msg, file=None):
@@ -214,25 +217,25 @@ def process(q, com, val):
 	(model, sentence_avg) = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
-			com.reply(model % target_user)
+			com.reply((model % target_user) + get_footer())
 			log('%s by %s in %s on %s:\n%s\n' % (target_user, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), model % target_user))
 		else:
 			reply_r = []
 			for _ in range(sentence_avg):
 				tmp_s = model.make_sentence(tries=TRIES)
 				if tmp_s == None:
-					com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
+					com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 					return
 				reply_r.append(tmp_s)
 			if sentence_avg == 0:
-				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments." % target_user)
+				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 				return
 			reply_r = ' '.join(reply_r)
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, sub, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
-			com.reply('%s\n\n ~ %s\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (reply,target_user,INFO_URL,SUB_URL))
+			com.reply('%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log(id + ": Rate limit exceeded: " + str(ex))
