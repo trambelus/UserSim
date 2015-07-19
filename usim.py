@@ -121,7 +121,10 @@ def get_history(r, user, limit=LIMIT):
 		comments = redditor.get_comments(limit=limit)
 		body = []
 		total_sentences = 0
+		recursion_testing = True
 		for c in comments:
+			if ('+/u/%s' % USER.lower()) not in c.body.lower():
+				recursion_testing = False
 			if not c.distinguished:
 				body.append(c.body)
 				try:
@@ -130,6 +133,8 @@ def get_history(r, user, limit=LIMIT):
 					# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
 					total_sentences += 1
 		num_comments = len(body)
+		if num_comments > MIN_COMMENTS and recursion_testing:
+			return (0, 0, 0)
 		sentence_avg = total_sentences / num_comments if num_comments > 0 else 0
 		body = ' '.join(body)
 		return (body, num_comments, sentence_avg)
@@ -168,8 +173,11 @@ def get_markov(r, id, user):
 		#log("%s: Getting history for %s" % (id, user))
 		(history, num_comments, sentence_avg) = get_history(r, user)
 		if history == None:
-			log('%s: User %s not found' % (id, user))
+			log('User %s not found' % user)
 			return ("User '%s' not found.", 0)
+		if history == 0:
+			log('User %s is attempting recursion' % user)
+			return ("I see what you're trying to do, %s. It won't work.", 0)
 		if num_comments < MIN_COMMENTS:
 			return ("User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS), 0)
 		#log("%s: Building model for %s" % (id, user))
