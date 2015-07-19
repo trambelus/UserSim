@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.5.5'
+VERSION = '1.6.0'
 
 import sys
 import contextlib
@@ -226,16 +226,16 @@ def process(q, com, val):
 			com.reply((model % target_user) + get_footer())
 			log('%s by %s in %s on %s:\n%s\n' % (target_user, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), model % target_user))
 		else:
+			if sentence_avg == 0:
+				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+				return
 			reply_r = []
-			for _ in range(sentence_avg):
+			for _ in range(random.randint(1,sentence_avg*2)):
 				tmp_s = model.make_sentence(tries=TRIES)
 				if tmp_s == None:
 					com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 					return
 				reply_r.append(tmp_s)
-			if sentence_avg == 0:
-				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
-				return
 			reply_r = ' '.join(reply_r)
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
