@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.7.1'
+VERSION = '1.7.2'
 
 import sys
 import contextlib
@@ -38,32 +38,36 @@ with silent():
 	import praw
 import multiprocessing as mp
 import time
-import rlogin # I wrote this one (check the repo)
+import rlogin
 from unidecode import unidecode
 import os
 import string
 import msvcrt
 import warnings
-with nostderr():
+with nostderr(): # Stupid noisy imports
 	import nltk
 import random
 
-LIMIT = 1000
-USERMOD_DIR = 'D:\\usermodels\\'
+LIMIT = 1000 # Max comments to pull from user history
+
+USERMOD_DIR = 'D:\\usermodels\\' # Cache directory
+
 MIN_COMMENTS = 25	# Users with less than this number of comments won't be attempted.
 # The Markov chains usually turn out a lot worse with less input.
 # TODO: detect the entropy or uniqueness of the corpus instead of raw length.
 # Anyone who knows a good way to do this, PM /u/Trambelus if you like.
-TRIES = 1000
+
+TRIES = 1000 # Max number of times to try each comment generation
 
 NO_REPLY = ['trollabot','ploungersimulator']
 STATE_SIZE = 2
 LOGFILE = 'usim.log'
 INFO_URL = 'https://github.com/trambelus/UserSim'
 SUB_URL = '/r/User_Simulator'
+SRC_URL = 'https://github.com/trambelus/UserSim/blob/master/usim.py'
 
 def get_footer():
-	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
+	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s) ^^| [^^Source ^^code](%s)' % (INFO_URL, SUB_URL, SRC_URL)
 
 
 def log(*msg, file=None):
