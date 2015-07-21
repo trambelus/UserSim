@@ -232,6 +232,7 @@ def process(q, com, val):
 	id = com.name
 	author = com.author.name if com.author else 'None'
 	sub = com.subreddit.display_name
+	ctime = time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))
 	val = val.replace('\n',' ')
 	val = val.replace('\t',' ')
 	val = val.replace(chr(160),' ')
@@ -253,7 +254,7 @@ def process(q, com, val):
 	try:
 		if isinstance(model, str):
 			try_reply(com,(model % target_user) + get_footer())
-			log('%s by %s in %s on %s:\n%s\n' % (target_user, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), model % target_user))
+			log('%s: %s by %s in %s on %s:\n%s\n' % (id, target_user, author, sub, ctime, model % target_user))
 		else:
 			if sentence_avg == 0:
 				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
@@ -269,11 +270,11 @@ def process(q, com, val):
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
-			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, sub, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
+			log('%s: %s (%d) by %s in %s on %s, reply:\n%s\n' % (id, target_user, sentence_avg, author, sub, ctime, reply))
 			try_reply(com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
-		log("%s: %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id,target_user, sentence_avg, author, sub, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)),str(ex)))
+		log("%s: %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
 		q.put(id)
 	except praw.errors.Forbidden:
 		log("Could not reply to comment by %s in %s" % (author, sub))
