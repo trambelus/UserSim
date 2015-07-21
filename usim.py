@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.6.3'
+VERSION = '1.7.1'
 
 import sys
 import contextlib
@@ -362,6 +362,12 @@ def manual(user, num):
 	for i in range(sentence_avg):
 		log(unidecode(model.make_sentence()))
 
+def count(user):
+	with silent():
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, counting comments of %s" % (VERSION,user))
+	(history, num_comments, sentence_avg) = get_history(r, user)
+	print("{}: {} comments, average {:.3f} sentences per comment".format(user, num_comments, sentence_avg))
+
 def upgrade():
 	files = [f[:-4] for f in os.listdir(USERMOD_DIR) if f[-4:] == '.txt']
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, upgrading cache" % VERSION)
@@ -375,11 +381,14 @@ def upgrade():
 			f.write(str(int(sentence_avg)))
 
 if __name__ == '__main__':
-	if len(sys.argv) >= 3 and sys.argv[1].lower() == 'manual':
-		num = 1
-		if len(sys.argv) == 4:
-			num = int(sys.argv[3])
-		manual(sys.argv[2], num)
+	if len(sys.argv) >= 3:
+		if sys.argv[1].lower() == 'manual':
+			num = 1
+			if len(sys.argv) == 4:
+				num = int(sys.argv[3])
+			manual(sys.argv[2], num)
+		elif sys.argv[1].lower() == 'count':
+			count(sys.argv[2])
 	elif len(sys.argv) > 1 and sys.argv[1].lower() == 'upgrade':
 		upgrade()
 	else:
