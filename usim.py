@@ -2,7 +2,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.6.0'
+VERSION = '1.6.3'
 
 import sys
 import contextlib
@@ -102,6 +102,16 @@ class PText(markovify.Text):
 			# Not counting emotes, there are no awkward characters.
 			return False
 		return True
+
+	# def make_sentence(self, *args, **kwargs):
+	# 	for i in range(TRIES):
+	# 		ret = super(PText, self).make_sentence(*args, **kwargs)
+	# 		if ret == None:
+	# 			return None
+	# 		if ('/u/%s' % USER).lower() not in ret.lower():
+	# 			return ret
+	# 	return None
+
 	if 'nltk' in globals(): # So it doesn't die if I comment out the nltk import
 		def word_split(self, sentence):
 			words = re.split(self.word_split_pattern, sentence)
@@ -173,7 +183,6 @@ def get_markov(r, id, user):
 		#log("%s: Getting history for %s" % (id, user))
 		(history, num_comments, sentence_avg) = get_history(r, user)
 		if history == None:
-			log('User %s not found' % user)
 			return ("User '%s' not found.", 0)
 		if history == 0:
 			log('User %s is attempting recursion' % user)
@@ -201,6 +210,14 @@ def get_markov(r, id, user):
 	else:
 		return from_scratch()
 
+def try_reply(com, msg):
+	try:
+		if USER.lower() in [rep.author.name.lower() for rep in com.replies if rep.author != None]:
+			return
+	except Exception:
+		pass
+	com.reply(msg)
+
 def process(q, com, val):
 	"""
 	Multiprocessing target. Gets the Markov model, uses it to get a sentence, and posts that as a reply.
@@ -216,10 +233,10 @@ def process(q, com, val):
 	val = val.replace(chr(160),' ')
 	target_user = val[val.rfind(' ')+1:].strip()
 	if author.lower() in NO_REPLY:
-		com.reply("I see what you're trying to do.%s" % get_footer())
+		try_reply(com,"I see what you're trying to do.%s" % get_footer())
 		return
 	if ('+/u/%s' % USER).lower() in target_user.lower():
-		com.reply("User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
+		try_reply(com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
 		return
 	idx = com.body.lower().find(target_user.lower())
 	target_user = com.body[idx:idx+len(target_user)]
@@ -231,17 +248,17 @@ def process(q, com, val):
 	(model, sentence_avg) = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
-			com.reply((model % target_user) + get_footer())
+			try_reply(com,(model % target_user) + get_footer())
 			log('%s by %s in %s on %s:\n%s\n' % (target_user, author, com.subreddit.display_name, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), model % target_user))
 		else:
 			if sentence_avg == 0:
-				com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 				return
 			reply_r = []
 			for _ in range(random.randint(1,sentence_avg*2)):
 				tmp_s = model.make_sentence(tries=TRIES)
 				if tmp_s == None:
-					com.reply("Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+					try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 					return
 				reply_r.append(tmp_s)
 			reply_r = ' '.join(reply_r)
@@ -249,10 +266,10 @@ def process(q, com, val):
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s (%d) by %s in %s on %s, reply:\n%s\n' % (target_user, sentence_avg, author, sub, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)), reply))
-			com.reply('%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
+			try_reply(com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
-		log(id + ": Rate limit exceeded: " + str(ex))
+		log("%s: %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id,target_user, sentence_avg, author, sub, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc)),str(ex)))
 		q.put(id)
 	except praw.errors.Forbidden:
 		log("Could not reply to comment by %s in %s" % (author, sub))
