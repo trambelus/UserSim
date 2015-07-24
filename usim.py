@@ -1,8 +1,25 @@
 #!/usr/bin/env python
+"""
+    TODO:
+     * Reduce the effects of user error
+     	- Levenshtein distance for username typos (did you mean...?)
+     	- Missing + in simple requests
+     	- /u/UserSimulator
+     * Subreddit simulation (+/u/User_Simulator /r/someplace)
+     * Customization options (command flags)
+     * Change backend to SQLite cache
+     * Ease restrictions on sentence filter
+     Maybe:
+     * Read self text, not just comments
+     * PM replies
+     * Comment score incorporation (trigram scoring?)
+     * Random simulation (+/u/User_Simulator *)
+     * Friend guessing (+/u/User_Simulator /u/somebody's friends)
+"""
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.7.2'
+VERSION = '1.7.3'
 
 import sys
 import contextlib
@@ -67,7 +84,7 @@ SUB_URL = '/r/User_Simulator'
 SRC_URL = 'https://github.com/trambelus/UserSim/blob/master/usim.py'
 
 def get_footer():
-	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s) ^^| [^^Source ^^code](%s)' % (INFO_URL, SUB_URL, SRC_URL)
+	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
 
 
 def log(*msg, file=None):
@@ -280,6 +297,9 @@ def process(q, com, val):
 		log("Could not reply to comment by %s in %s" % (author, sub))
 	except praw.errors.APIException:
 		log("Parent comment by %s in %s was deleted" % (author, sub))
+	except praw.errors.HTTPException:
+		log("%s: %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
+		q.put(id)
 
 def monitor():
 	"""
