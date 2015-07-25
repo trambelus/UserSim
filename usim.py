@@ -19,7 +19,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.9.0'
+VERSION = '1.9.1'
 
 import sys
 import contextlib
@@ -295,6 +295,9 @@ def process(q, com, val):
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
 	if target_user[:3] == '/u/':
 		target_user = target_user[3:]
+	if target_user == 'YOURUSERNAMEHERE':
+		log("Corrected 'YOURUSERNAMEHERE' to %s" % author)
+		target_user = author
 	#log('%s: Started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
 	try:
 		next(r.get_redditor(target_user).get_comments(limit=1))
@@ -302,6 +305,8 @@ def process(q, com, val):
 		if levenshteinDistance(target_user, author) < 3:
 			log("Corrected spelling from %s to %s" % (target_user, author))
 			target_user = author
+	except StopIteration:
+		pass
 	(model, sentence_avg) = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
@@ -343,7 +348,7 @@ def monitor_sub(q, index):
 	with silent():
 		r = get_r()
 	t0 = time.time()
-	log('Restarted')
+	log('Started main thread %d' % (index+1))
 	while True:
 		try:
 			# Every 55 minutes, refresh the login.
