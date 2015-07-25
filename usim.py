@@ -19,7 +19,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.7.5'
+VERSION = '1.9.0'
 
 import sys
 import contextlib
@@ -76,6 +76,8 @@ MIN_COMMENTS = 25	# Users with less than this number of comments won't be attemp
 # Anyone who knows a good way to do this, PM /u/Trambelus if you like.
 
 TRIES = 1000 # Max number of times to try each comment generation
+
+MONITOR_PROCESSES = 3
 
 NO_REPLY = ['trollabot','ploungersimulator']
 STATE_SIZE = 2
@@ -174,6 +176,22 @@ def get_history(r, user, limit=LIMIT):
 	except praw.errors.NotFound:
 		return (None, None, None)
 
+def levenshteinDistance(s1,s2):
+	if len(s1) > len(s2):
+		s1,s2 = s2,s1
+	distances = range(len(s1) + 1)
+	for index2,char2 in enumerate(s2):
+		newDistances = [index2+1]
+		for index1,char1 in enumerate(s1):
+			if char1 == char2:
+				newDistances.append(distances[index1])
+			else:
+				newDistances.append(1 + min((distances[index1],
+											 distances[index1+1],
+											 newDistances[-1])))
+		distances = newDistances
+	return distances[-1]
+
 def get_markov(r, id, user):
 	"""
 	Given a user, return a Markov state model for them,
@@ -233,13 +251,14 @@ def get_markov(r, id, user):
 	else:
 		return from_scratch()
 
-def try_reply(com, msg):
+def try_reply(q, com, msg):
 	try:
 		if USER.lower() in [rep.author.name.lower() for rep in com.replies if rep.author != None]:
 			return
 	except Exception:
 		pass
 	newcom = com.reply(msg)
+	q.put(com.name)
 	try:
 		with open(NAMEFILE, 'a') as f:
 			f.write(newcom.name + '\n')
@@ -257,7 +276,7 @@ def process(q, com, val):
 	if com == None:
 		return
 	id = com.name
-	author = com.author.name if com.author else 'None'
+	author = com.author.name if com.author else '[deleted]'
 	sub = com.subreddit.display_name
 	ctime = time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))
 	val = val.replace('\n',' ')
@@ -268,7 +287,7 @@ def process(q, com, val):
 		try_reply(com,"I see what you're trying to do.%s" % get_footer())
 		return
 	if ('+/u/%s' % USER).lower() in target_user.lower():
-		try_reply(com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
+		try_reply(q, com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
 		return
 	idx = com.body.lower().find(target_user.lower())
 	target_user = com.body[idx:idx+len(target_user)]
@@ -277,20 +296,26 @@ def process(q, com, val):
 	if target_user[:3] == '/u/':
 		target_user = target_user[3:]
 	#log('%s: Started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
+	try:
+		next(r.get_redditor(target_user).get_comments(limit=1))
+	except praw.errors.NotFound:
+		if levenshteinDistance(target_user, author) < 3:
+			log("Corrected spelling from %s to %s" % (target_user, author))
+			target_user = author
 	(model, sentence_avg) = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
-			try_reply(com,(model % target_user) + get_footer())
+			try_reply(q, com,(model % target_user) + get_footer())
 			log('%s: %s by %s in %s on %s:\n%s' % (id, target_user, author, sub, ctime, model % target_user), additional='\n')
 		else:
 			if sentence_avg == 0:
-				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+				try_reply(q, com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 				return
 			reply_r = []
 			for _ in range(random.randint(1,sentence_avg*2)):
 				tmp_s = model.make_sentence(tries=TRIES)
 				if tmp_s == None:
-					try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+					try_reply(q, com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 					return
 				reply_r.append(tmp_s)
 			reply_r = ' '.join(reply_r)
@@ -298,7 +323,7 @@ def process(q, com, val):
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s: %s (%d) by %s in %s on %s, reply' % (id, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
-			try_reply(com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
+			try_reply(q, com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log("%s: %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
@@ -311,17 +336,9 @@ def process(q, com, val):
 		log("%s: %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
 		q.put(id)
 
-def monitor():
-	"""
-	Main loop. Looks through username notifications, comment replies, and whatever else,
-	and launches a single process for every new request it finds.
-	"""
-	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, main thread" % VERSION)
-
+def monitor_sub(q, index):
 	started = []
-	q = mp.Queue()
-	quit_proc = mp.Process(target=wait, args=(q,))
-	quit_proc.start()
+	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, main thread %d" % (VERSION, index))
 	req_pat = re.compile(r"\+(\s)?/u/%s\s?(\[.\])?\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
 	with silent():
 		r = get_r()
@@ -337,6 +354,8 @@ def monitor():
 				t0 = time.time()
 			mentions = r.get_inbox(limit=INBOX_LIMIT)
 			for com in mentions:
+				if int(com.name[3:], 36) % MONITOR_PROCESSES != index:
+					continue
 				res = re.search(req_pat, com.body.lower())
 				if res == None:
 					continue # We were mentioned but it's not a proper request, move on
@@ -350,14 +369,14 @@ def monitor():
 				started.append(com.name)
 				warnings.simplefilter("ignore")
 				mp.Process(target=process, args=(q, com, res.group(0))).start()
-			if not quit_proc.is_alive():
-				log("Stopping main process")
-				return
 			while q.qsize() > 0:
 				item = q.get()
 				if item == 'clear':
 					log("Clearing list of started tasks")
 					started = []
+				elif item == 'quit':
+					log("Stopping main process")
+					return
 				elif item in started:
 					started.remove(item)
 		# General-purpose catch to make the script unbreakable.
@@ -366,6 +385,17 @@ def monitor():
 		except Exception as ex:
 			log(str(type(ex)) + ": " + str(ex))
 
+def monitor():
+	"""
+	Main loop. Looks through username notifications, comment replies, and whatever else,
+	and launches a single process for every new request it finds.
+	"""
+	q = mp.Queue()
+	quit_proc = mp.Process(target=wait, args=(q,))
+	quit_proc.start()
+	for i in range(MONITOR_PROCESSES):
+		mp.Process(target=monitor_sub, args=(q,i)).start()
+	
 def wait(q):
 	"""
 	Separate thread for responding if the operator presses command keys
@@ -376,6 +406,7 @@ def wait(q):
 		inp = msvcrt.getch()
 		if inp == b'q':
 			log("Quit")
+			q.put('quit')
 			break
 		if inp == b'c':
 			q.put('clear')
