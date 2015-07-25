@@ -19,7 +19,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.7.3'
+VERSION = '1.7.5'
 
 import sys
 import contextlib
@@ -66,6 +66,7 @@ with nostderr(): # Stupid noisy imports
 import random
 
 LIMIT = 1000 # Max comments to pull from user history
+INBOX_LIMIT = 50 # Max mentions to pull from inbox
 
 USERMOD_DIR = 'D:\\usermodels\\' # Cache directory
 
@@ -79,6 +80,7 @@ TRIES = 1000 # Max number of times to try each comment generation
 NO_REPLY = ['trollabot','ploungersimulator']
 STATE_SIZE = 2
 LOGFILE = 'usim.log'
+NAMEFILE = 'names.log'
 INFO_URL = 'https://github.com/trambelus/UserSim'
 SUB_URL = '/r/User_Simulator'
 SRC_URL = 'https://github.com/trambelus/UserSim/blob/master/usim.py'
@@ -87,7 +89,7 @@ def get_footer():
 	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
 
 
-def log(*msg, file=None):
+def log(*msg, file=None, additional=''):
 	"""
 	Prepends a timestamp and prints a message to the console and LOGFILE
 	"""
@@ -95,7 +97,7 @@ def log(*msg, file=None):
 	if file:
 		print(output, file=file)
 	else:
-		print(output)
+		print(output + additional)
 		with open(LOGFILE, 'a') as f:
 			f.write(output + '\n')
 
@@ -237,7 +239,15 @@ def try_reply(com, msg):
 			return
 	except Exception:
 		pass
-	com.reply(msg)
+	newcom = com.reply(msg)
+	try:
+		with open(NAMEFILE, 'a') as f:
+			f.write(newcom.name + '\n')
+	except Exception:
+		pass
+
+def dfmt(created_utc):
+	return time.strftime("%Y-%m-%d %X",time.localtime(created_utc))
 
 def process(q, com, val):
 	"""
@@ -287,7 +297,7 @@ def process(q, com, val):
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
-			log('%s: %s (%d) by %s in %s on %s, reply:\n%s\n' % (id, target_user, sentence_avg, author, sub, ctime, reply))
+			log('%s: %s (%d) by %s in %s on %s, reply:' % (id, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
 			try_reply(com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
@@ -325,7 +335,7 @@ def monitor():
 					r = get_r()
 				log("Refreshed login")
 				t0 = time.time()
-			mentions = r.get_inbox()
+			mentions = r.get_inbox(limit=INBOX_LIMIT)
 			for com in mentions:
 				res = re.search(req_pat, com.body.lower())
 				if res == None:
@@ -350,7 +360,6 @@ def monitor():
 					started = []
 				elif item in started:
 					started.remove(item)
-			time.sleep(1)
 		# General-purpose catch to make the script unbreakable.
 		except praw.errors.InvalidComment:
 			continue # This one was completely trashing the console, so handle it silently.
@@ -405,6 +414,15 @@ def upgrade():
 		with open(info_fname, 'w') as f:
 			f.write(str(int(sentence_avg)))
 
+def get_user_top(sort):
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
+	redditor = r.get_redditor(USER)
+	comments = redditor.get_comments(limit=None, sort=sort)
+	for c in comments:
+		print("%s at %s in %s: %s" % (c.name, dfmt(c.created_utc), c.subreddit.display_name, c.score))
+		with open("%s.txt" % sort,"a") as f:
+			f.write(c.name + '\n')
+
 if __name__ == '__main__':
 	if len(sys.argv) >= 3:
 		if sys.argv[1].lower() == 'manual':
@@ -414,7 +432,10 @@ if __name__ == '__main__':
 			manual(sys.argv[2], num)
 		elif sys.argv[1].lower() == 'count':
 			count(sys.argv[2])
-	elif len(sys.argv) > 1 and sys.argv[1].lower() == 'upgrade':
-		upgrade()
+		elif sys.argv[1].lower() == 'names':
+			get_user_top(sys.argv[2])
+	elif len(sys.argv) > 1:
+		if sys.argv[1].lower() == 'upgrade':
+			upgrade()
 	else:
 		monitor()
