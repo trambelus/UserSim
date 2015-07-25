@@ -258,7 +258,7 @@ def try_reply(q, com, msg):
 	except Exception:
 		pass
 	newcom = com.reply(msg)
-	q.put(com.name)
+	# q.put(com.name)
 	try:
 		with open(NAMEFILE, 'a') as f:
 			f.write(newcom.name + '\n')
