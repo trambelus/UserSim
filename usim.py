@@ -281,7 +281,7 @@ def process(q, com, val):
 	try:
 		if isinstance(model, str):
 			try_reply(com,(model % target_user) + get_footer())
-			log('%s: %s by %s in %s on %s:\n%s\n' % (id, target_user, author, sub, ctime, model % target_user))
+			log('%s: %s by %s in %s on %s:\n%s' % (id, target_user, author, sub, ctime, model % target_user), additional='\n')
 		else:
 			if sentence_avg == 0:
 				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
@@ -297,7 +297,7 @@ def process(q, com, val):
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
-			log('%s: %s (%d) by %s in %s on %s, reply:' % (id, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
+			log('%s: %s (%d) by %s in %s on %s, reply' % (id, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
 			try_reply(com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
