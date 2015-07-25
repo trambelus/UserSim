@@ -302,7 +302,7 @@ def process(q, com, val):
 	try:
 		next(r.get_redditor(target_user).get_comments(limit=1))
 	except praw.errors.NotFound:
-		if levenshteinDistance(target_user, author) < 3:
+		if levenshteinDistance(target_user, author) <3:
 			log("Corrected spelling from %s to %s" % (target_user, author))
 			target_user = author
 	except StopIteration:
