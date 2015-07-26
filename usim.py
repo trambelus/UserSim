@@ -19,7 +19,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.9.1'
+VERSION = '1.9.6'
 
 import sys
 import contextlib
@@ -66,7 +66,6 @@ with nostderr(): # Stupid noisy imports
 import random
 
 LIMIT = 1000 # Max comments to pull from user history
-INBOX_LIMIT = 50 # Max mentions to pull from inbox
 
 USERMOD_DIR = 'D:\\usermodels\\' # Cache directory
 
@@ -77,7 +76,8 @@ MIN_COMMENTS = 25	# Users with less than this number of comments won't be attemp
 
 TRIES = 1000 # Max number of times to try each comment generation
 
-MONITOR_PROCESSES = 3
+MONITOR_PROCESSES = 4
+INBOX_LIMIT = 20*MONITOR_PROCESSES # Max mentions to pull from inbox
 
 NO_REPLY = ['trollabot','ploungersimulator']
 STATE_SIZE = 2
@@ -154,19 +154,26 @@ def get_history(r, user, limit=LIMIT):
 	try:
 		redditor = r.get_redditor(user)
 		comments = redditor.get_comments(limit=limit)
-		body = []
-		total_sentences = 0
-		recursion_testing = True
-		for c in comments:
-			if ('+/u/%s' % USER.lower()) not in c.body.lower():
-				recursion_testing = False
-			if not c.distinguished:
-				body.append(c.body)
-				try:
-					total_sentences += len(markovify.split_into_sentences(c.body))
-				except Exception:
-					# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
-					total_sentences += 1
+		c_finished = False
+		while not c_finished:
+			body = []
+			total_sentences = 0
+			recursion_testing = True
+			try:
+				for c in comments:
+					if ('+/u/%s' % USER.lower()) not in c.body.lower():
+						recursion_testing = False
+					if not c.distinguished:
+						body.append(c.body)
+						try:
+							total_sentences += len(markovify.split_into_sentences(c.body))
+						except Exception:
+							# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
+							total_sentences += 1
+				c_finished = True
+			except praw.errors.HTTPException as ex:
+				log(ex)
+				pass
 		num_comments = len(body)
 		if num_comments >= MIN_COMMENTS and recursion_testing:
 			return (0, 0, 0)
@@ -307,6 +314,8 @@ def process(q, com, val):
 			target_user = author
 	except StopIteration:
 		pass
+	except praw.errors.HTTPException:
+		time.sleep(1)
 	(model, sentence_avg) = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
@@ -328,6 +337,7 @@ def process(q, com, val):
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s: %s (%d) by %s in %s on %s, reply' % (id, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
+			target_user = target_user.replace('_','\_')
 			try_reply(q, com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
@@ -459,6 +469,11 @@ def get_user_top(sort):
 		with open("%s.txt" % sort,"a") as f:
 			f.write(c.name + '\n')
 
+def open_by_id(id):
+	import webbrowser
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
+	webbrowser.open_new_tab(r.get_info(thing_id=id).permalink)
+
 if __name__ == '__main__':
 	if len(sys.argv) >= 3:
 		if sys.argv[1].lower() == 'manual':
@@ -470,6 +485,8 @@ if __name__ == '__main__':
 			count(sys.argv[2])
 		elif sys.argv[1].lower() == 'names':
 			get_user_top(sys.argv[2])
+		elif sys.argv[1].lower() == 'link':
+			open_by_id(sys.argv[2])
 	elif len(sys.argv) > 1:
 		if sys.argv[1].lower() == 'upgrade':
 			upgrade()
