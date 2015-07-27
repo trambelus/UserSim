@@ -1,3 +1,5 @@
+### NOTE: This bot has been shadowbanned. See [here](http://redd.it/3et0lw) for more details.
+
 # UserSim
 Like [/r/SubredditSimulator,](http://www.reddit.com/r/SubredditSimulator) but for individual users.
 
