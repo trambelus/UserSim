@@ -7,6 +7,8 @@ Check out the subreddit at [/r/User_Simulator](http://www.reddit.com/r/User_Simu
 
 [/u/User_Simulator](http://www.reddit.com/user/User_Simulator) is a summonable Reddit bot that reads a particular user's last 1000 comments and uses Markov chains to construct comments in that user's style.
 
+Basically, it pretends to be you. It's what you would write if you were a robot with a nice vocabulary but no understanding of how words should fit together.
+
 ### How do I use it?
 
 Summon it like this:
