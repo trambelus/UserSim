@@ -41,3 +41,11 @@ Yeah, it's a bot and it generates its responses randomly; it doesn't know what's
 -----
 
 If you have any questions or ideas, shoot me a PM at [/u/Trambelus.](https://www.reddit.com/message/compose/?to=trambelus)
+
+-----
+
+### Currently banned in:
+
+/r/rupaulsdragrace, /r/atheism, /r/CFB, /r/worldnews, /r/DarkNetMarkets, /r/blackladies, /r/wow, /r/india, /r/CasualConversation, /r/australia, /r/SFGiants, /r/relationships, /r/badhistory, /r/GlobalOffensive, /r/pcmasterrace, /r/Denmark, /r/AskReddit, /r/science, /r/formula1, /r/Civcraft, /r/soccer, /r/news, /r/anime, /r/Weaselwarren, /r/fireemblem, /r/Whatcouldgowrong, /r/SubredditDrama, /r/nba, /r/leagueoflegends, /r/gifs, /r/smashbros, /r/AgainstGamerGate, /r/NASCAR, /r/gameofthrones, /r/Patriots, /r/Cardinals, /r/MLS, /r/gaming, /r/RWBY, /r/magicTCG, /r/flicks, /r/DestinyTheGame
+
+*This list might not be current.*
