@@ -46,6 +46,6 @@ If you have any questions or ideas, shoot me a PM at [/u/Trambelus.](https://www
 
 ### Currently banned in:
 
-/r/rupaulsdragrace, /r/atheism, /r/CFB, /r/worldnews, /r/DarkNetMarkets, /r/blackladies, /r/wow, /r/india, /r/CasualConversation, /r/australia, /r/SFGiants, /r/relationships, /r/badhistory, /r/GlobalOffensive, /r/pcmasterrace, /r/Denmark, /r/AskReddit, /r/science, /r/formula1, /r/Civcraft, /r/soccer, /r/news, /r/anime, /r/Weaselwarren, /r/fireemblem, /r/Whatcouldgowrong, /r/SubredditDrama, /r/nba, /r/leagueoflegends, /r/gifs, /r/smashbros, /r/AgainstGamerGate, /r/NASCAR, /r/gameofthrones, /r/Patriots, /r/Cardinals, /r/MLS, /r/gaming, /r/RWBY, /r/magicTCG, /r/flicks, /r/DestinyTheGame
+ /r/AceAttorney, /r/AgainstGamerGate, /r/AskReddit, /r/CFB, /r/CadenMoranDiary, /r/Calgary, /r/Cardinals, /r/CasualConversation, /r/Civcraft, /r/Cricket, /r/DarkNetMarkets, /r/Denmark, /r/DestinyTheGame, /r/Eve, /r/GlobalOffensive, /r/InternetIsBeautiful, /r/MLS, /r/NASCAR, /r/Omnipotent_League, /r/Patriots, /r/RWBY, /r/SFGiants, /r/ShitRedditSays, /r/SubredditDrama, /r/SubredditSimMeta, /r/TheWaterLew, /r/Weaselwarren, /r/Whatcouldgowrong, /r/Wishlist, /r/anime, /r/atheism, /r/australia, /r/badhistory, /r/blackladies, /r/cringepics, /r/fireemblem, /r/flicks, /r/formula1, /r/gameofthrones, /r/gaming, /r/gifs, /r/india, /r/leagueoflegends, /r/magicTCG, /r/mylittleandysonic1, /r/nba, /r/news, /r/offmychest, /r/paradoxplaza, /r/pcmasterrace, /r/reactiongifs, /r/relationships, /r/roosterteeth, /r/rupaulsdragrace, /r/science, /r/smashbros, /r/soccer, /r/syriancivilwar, /r/tf2, /r/videos, /r/worldnews, /r/wow
 
-*This list might not be current.*
+*List updated: 2015-08-10 1628 EDT*

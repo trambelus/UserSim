@@ -17,9 +17,9 @@
      * Friend guessing (+/u/User_Simulator /u/somebody's friends)
 """
 
-USER = 'User_Simulator'
+USER = 'UserSimulator'
 APP = 'Simulator'
-VERSION = '1.9.8'
+VERSION = '2.0.0b'
 
 import sys
 import contextlib
@@ -67,7 +67,7 @@ import random
 
 LIMIT = 1000 # Max comments to pull from user history
 
-USERMOD_DIR = 'D:\\usermodels\\' # Cache directory
+USERMOD_DIR = 'D:\\usermodelsb\\' # Cache directory
 
 MIN_COMMENTS = 25	# Users with less than this number of comments won't be attempted.
 # The Markov chains usually turn out a lot worse with less input.
@@ -81,21 +81,18 @@ INBOX_LIMIT = 30*MONITOR_PROCESSES # Max mentions to pull from inbox
 
 NO_REPLY = ['trollabot','ploungersimulator']
 STATE_SIZE = 2
-LOGFILE = 'usim.log'
-NAMEFILE = 'names.log'
-BANNED_FILE = 'banned.txt'
-
+LOGFILE = 'usimb.log'
+NAMEFILE = 'namesb.log'
 INFO_URL = 'https://github.com/trambelus/UserSim'
 SUB_URL = '/r/User_Simulator'
-SRC_URL = 'https://github.com/trambelus/UserSim/blob/master/usim.py'
 
-REFRESH_THRESHOLD = 2*24*60*60
+HIST_DEL = 'h> t/TF(:Qk"N%bL*V0() pvZDgl@kAA'
 
 def get_footer():
 	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
 
 
-def log(*msg, file=None, additional='', console_only=False):
+def log(*msg, file=None, additional=''):
 	"""
 	Prepends a timestamp and prints a message to the console and LOGFILE
 	"""
@@ -104,24 +101,50 @@ def log(*msg, file=None, additional='', console_only=False):
 		print(output, file=file)
 	else:
 		print(output + additional)
-		if not console_only:
-			with open(LOGFILE, 'a') as f:
-				f.write(output + '\n')
+		with open(LOGFILE, 'a') as f:
+			f.write(output + '\n')
 
-class PText(markovify.Text):
+class QText(markovify.Text):
 	"""
 	This subclass makes three changes: it modifies the sentence filter
 	to allow emotes in comments, it uses the Natural Language Toolkit
 	for slightly more coherent responses, and it guarantees a response
 	every time with make_sentence.
 	"""
+	max_overlap_ratio = 0.7
+	max_overlap_cap = 6
+
+	def __init__(self, input_text, state_size=2, chain=None):
+		"""
+		input_text: A list of strings representing individual comments.
+		state_size: An integer indicating the number of words in the model's state.
+		chain: A trained markovify.Chain instance for this text, if pre-processed.
+		"""
+		if chain == None:
+			runs = self.generate_corpus(input_text)
+
+		self.input_text = input_text
+		self.state_size = state_size        
+		self.chain = chain or markovify.Chain(runs, state_size)
+
+	def generate_corpus(self, sentences):
+		"""
+		Given a text string, returns a list of lists; that is, a list of
+		"sentences," each of which is a list of words. Before splitting into 
+		words, the sentences are filtered through `self.test_sentence_input`
+		"""
+		passing = filter(self.test_sentence_input, sentences)
+		runs = map(self.word_split, passing)
+		return [list(r) for r in runs]
+
 	def test_sentence_input(self, sentence):
 		"""
 		A basic sentence filter. This one rejects sentences that contain
 		the type of punctuation that would look strange on its own
 		in a randomly-generated sentence. 
 		"""
-		emote_pat = re.compile(r"\[.+?\]\(\/.+?\)")
+		return True
+		emote_pat = re.compile(r"\[\S+?\]\(\S+\)")
 		reject_pat = re.compile(r"(^')|('$)|\s'|'\s|([\"(\(\)\[\])])")
 		# Decode unicode, mainly to normalize fancy quotation marks
 		decoded = unidecode(sentence)
@@ -133,9 +156,28 @@ class PText(markovify.Text):
 			return False
 		return True
 
+	def test_sentence_output(self, words):
+		"""
+		Given a generated list of words, accept or reject it. This one rejects
+		sentences that too closely match the original text, namely those that
+		contain any identical sequence of words of X length, where X is the
+		smaller number of (a) 70% of the total number of words, and (b) 15.
+		"""
+		# Reject large chunks of similarity
+		overlap_ratio = int(round(self.max_overlap_ratio * len(words)))
+		overlap_max = min(self.max_overlap_cap, overlap_ratio)
+		overlap_over = overlap_max + 1
+		gram_count = max((len(words) - overlap_max), 1)
+		grams = [ words[i:i+overlap_over] for i in range(gram_count) ]
+		for g in grams:
+			gram_joined = self.word_join(g)
+		if gram_joined in self.rejoined_text:
+			return False
+		return True
+
 	# def make_sentence(self, *args, **kwargs):
 	# 	for i in range(TRIES):
-	# 		ret = super(PText, self).make_sentence(*args, **kwargs)
+	# 		ret = super(QText, self).make_sentence(*args, **kwargs)
 	# 		if ret == None:
 	# 			return None
 	# 		if ('/u/%s' % USER).lower() not in ret.lower():
@@ -151,9 +193,9 @@ class PText(markovify.Text):
 			sentence = " ".join(word.split("::")[0] for word in words)
 			return sentence
 
-def get_history(r, user, limit=LIMIT, subreddit=None):
+def get_history(r, user, limit=LIMIT):
 	"""
-	Grabs a user's most recent comments and returns them as a single string.
+	Grabs a user's most recent comments and returns them as a list.
 	The average will probably be 20k-30k words.
 	"""
 	try:
@@ -168,27 +210,19 @@ def get_history(r, user, limit=LIMIT, subreddit=None):
 				for c in comments:
 					if ('+/u/%s' % USER.lower()) not in c.body.lower():
 						recursion_testing = False
-					if (not c.distinguished) and ((not subreddit) or c.subreddit.display_name == subreddit):
+					if not c.distinguished:
 						body.append(c.body)
-						try:
-							total_sentences += len(markovify.split_into_sentences(c.body))
-						except Exception:
-							# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
-							total_sentences += 1
 				c_finished = True
 			except praw.errors.HTTPException as ex:
-				log(ex)
+				log(str(ex))
 				pass
-		num_comments = len(body)
-		if num_comments >= MIN_COMMENTS and recursion_testing:
-			return (0, 0, 0)
-		sentence_avg = total_sentences / num_comments if num_comments > 0 else 0
-		body = ' '.join(body)
-		return (body, num_comments, sentence_avg)
+		if len(body) >= MIN_COMMENTS and recursion_testing:
+			return 0
+		return body
 	except praw.errors.NotFound:
-		return (None, None, None)
+		return None
 
-def levenshteinDistance(s1,s2):
+def levenshteinDistance(s1, s2):
 	if len(s1) > len(s2):
 		s1,s2 = s2,s1
 	distances = range(len(s1) + 1)
@@ -211,58 +245,45 @@ def get_markov(r, id, user):
 	"""
 	txt_fname = USERMOD_DIR + '%s.txt' % user
 	json_fname = USERMOD_DIR + '%s.json' % user
-	info_fname = USERMOD_DIR + '%s.info' % user
 	# Stores two files: some-reddit-user.txt for the raw corpus,
 	# and some-reddit-user.json for the structure holding the Markov state model.
 	def from_cache():
 		#log("%s: Reading cache for %s" % (id, user))
-		mod_time = os.path.getmtime(txt_fname)
-		if time.time() - mod_time > REFRESH_THRESHOLD:
-			log("Refreshing info for %s" % user, console_only=True)
-			return from_scratch()
 		f_txt = open(txt_fname, 'r')
 		f_json = open(json_fname, 'r')
-		f_info = open(info_fname, 'r')
-		text = ''.join(f_txt.readlines())
+		text = ''.join(f_txt.readlines()).split(HIST_DEL)
 		json = f_json.readlines()[0]
-		try:
-			sentence_avg = int(f_info.readlines()[0])
-		except ValueError:
-			sentence_avg = 1
-		if text == '' or json == []:
+		if text == [] or json == []:
 			return from_scratch()
 		f_txt.close()
 		f_json.close()
-		return (PText(text, state_size=STATE_SIZE, chain=markovify.Chain.from_json(json)), sentence_avg)
+		return QText(text, state_size=STATE_SIZE, chain=markovify.Chain.from_json(json))
 
 	def from_scratch():
 		# No cache was found: build the model from scratch
 		#log("%s: Getting history for %s" % (id, user))
-		(history, num_comments, sentence_avg) = get_history(r, user)
+		history = get_history(r, user)
 		if history == None:
-			return ("User '%s' not found.", 0)
+			return "User '%s' not found."
 		if history == 0:
 			log('User %s is attempting recursion' % user)
-			return ("I see what you're trying to do, %s. It won't work.", 0)
-		if num_comments < MIN_COMMENTS:
-			return ("User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS), 0)
+			return "I see what you're trying to do, %s. It won't work."
+		if len(history) < MIN_COMMENTS:
+			return "User '%%s' has %d comment%s in history; minimum requirement is %d." % (len(history),'' if len(history) == 1 else 's', MIN_COMMENTS)
 		#log("%s: Building model for %s" % (id, user))
 		try:
-			model = PText(history, state_size=STATE_SIZE)
+			model = QText(history, state_size=STATE_SIZE)
 		except IndexError:
-			return ("Error: User '%s' is too dank to simulate.", 0)
+			return "Error: User '%s' is too dank to simulate."
 		f = open(txt_fname, 'w')
-		f.write(unidecode(history))
+		f.write(HIST_DEL.join([unidecode(h) for h in history]))
 		f.close()
 		f = open(json_fname, 'w')
 		f.write(model.chain.to_json())
 		f.close()
-		f = open(info_fname, 'w')
-		f.write(str(int(sentence_avg)))
-		f.close()
-		return (model, int(sentence_avg))
+		return model
 
-	if os.path.isfile(txt_fname) and os.path.isfile(json_fname) and os.path.isfile(info_fname):
+	if os.path.isfile(txt_fname) and os.path.isfile(json_fname):
 		return from_cache()
 	else:
 		return from_scratch()
@@ -307,7 +328,6 @@ def process(q, com, val):
 		return
 	idx = com.body.lower().find(target_user.lower())
 	target_user = com.body[idx:idx+len(target_user)]
-	r_subreddit = re.compile(r"/?r/[\w\d_]{0,21}")
 	with silent():
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
 	if target_user[:3] == '/u/':
@@ -326,45 +346,36 @@ def process(q, com, val):
 		pass
 	except praw.errors.HTTPException:
 		time.sleep(1)
-	(model, sentence_avg) = get_markov(r, id, target_user)
+	model = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
 			try_reply(q, com,(model % target_user) + get_footer())
 			log('%s: %s by %s in %s on %s:\n%s' % (id, target_user, author, sub, ctime, model % target_user), additional='\n')
 		else:
-			if sentence_avg == 0:
+			reply_r = model.make_sentence(tries=TRIES)
+			if reply_r == None:
 				try_reply(q, com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 				return
-			reply_r = []
-			for _ in range(random.randint(1,sentence_avg)):
-				tmp_s = model.make_sentence(tries=TRIES)
-				if tmp_s == None:
-					try_reply(q, com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
-					return
-				reply_r.append(tmp_s)
-			reply_r = ' '.join(reply_r)
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
-			log('%s: %s (%d) by %s in %s on %s, reply' % (id, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
+			log('%s: %s by %s in %s on %s, reply' % (id, target_user, author, sub, ctime), additional='\n%s\n' % reply)
 			target_user = target_user.replace('_','\_')
 			try_reply(q, com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
-		log("%s: %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
+		log("%s: %s by %s in %s on %s: rate limit exceeded: %s" % (id, target_user, author, sub, ctime, str(ex)))
 		q.put(id)
-	except praw.errors.Forbidden as ex:
-		log("Could not reply to comment by %s in %s: %s" % (author, sub, str(ex)))
+	except praw.errors.Forbidden:
+		log("Could not reply to comment by %s in %s" % (author, sub))
 	except praw.errors.APIException:
 		log("Parent comment by %s in %s was deleted" % (author, sub))
 	except praw.errors.HTTPException:
-		log("%s: %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
+		log("%s: %s by %s in %s on %s: could not reply, will retry: %s" % (id, target_user, author, sub, ctime, str(ex)))
 		q.put(id)
 
 def monitor_sub(q, index):
 	started = []
-	with open(BANNED_FILE, 'r') as f:
-		banned = [s.rstrip() for s in f.readlines()]
 	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, main thread %d" % (VERSION, index))
 	req_pat = re.compile(r"\+(\s)?/u/%s\s?(\[.\])?\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
 	with silent():
@@ -377,19 +388,11 @@ def monitor_sub(q, index):
 			if (time.time() - t0 > 55*60):
 				with silent():
 					r = get_r()
-				log("Refreshed login for thread %d" % (index+1))
+				log("Refreshed login")
 				t0 = time.time()
 			mentions = r.get_inbox(limit=INBOX_LIMIT)
 			for com in mentions:
-				if int(com.name[3:], 36) % MONITOR_PROCESSES != index: 
-					continue # One of the other monitor threads is handling this one; skip
-				try:
-					if com.subreddit == None:
-						continue
-					if com.subreddit.display_name in banned:
-						log("%s: Ignored request from banned subreddit %s" % (com.name,com.subreddit.display_name))
-						continue
-				except praw.errors.Forbidden:
+				if int(com.name[3:], 36) % MONITOR_PROCESSES != index:
 					continue
 				res = re.search(req_pat, com.body.lower())
 				if res == None:
@@ -401,7 +404,7 @@ def monitor_sub(q, index):
 					continue
 				if com.name in started:
 					continue # We've already started on this one, move on
-				
+				started.append(com.name)
 				warnings.simplefilter("ignore")
 				mp.Process(target=process, args=(q, com, res.group(0))).start()
 			while q.qsize() > 0:
@@ -414,9 +417,9 @@ def monitor_sub(q, index):
 					return
 				elif item in started:
 					started.remove(item)
+		# General-purpose catch to make the script unbreakable.
 		except praw.errors.InvalidComment:
 			continue # This one was completely trashing the console, so handle it silently.
-		# General-purpose catch to make the script unbreakable.
 		except Exception as ex:
 			log(str(type(ex)) + ": " + str(ex))
 
@@ -458,27 +461,14 @@ def manual(user, num):
 	"""
 	with silent():
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating in manual mode" % VERSION)
-	(model, sentence_avg) = get_markov(r, 'manual', user)
-	for i in range(sentence_avg):
-		log(unidecode(model.make_sentence()))
+	model = get_markov(r, 'manual', user)
+	log(unidecode(model.make_sentence()))
 
 def count(user):
 	with silent():
 		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, counting comments of %s" % (VERSION,user))
-	(history, num_comments, sentence_avg) = get_history(r, user)
-	print("{}: {} comments, average {:.3f} sentences per comment".format(user, num_comments, sentence_avg))
-
-def upgrade():
-	files = [f[:-4] for f in os.listdir(USERMOD_DIR) if f[-4:] == '.txt']
-	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, upgrading cache" % VERSION)
-	for user in files:
-		info_fname = USERMOD_DIR + user + '.info'
-		if os.path.isfile(info_fname):
-			continue
-		(history, num_comments, sentence_avg) = get_history(r, user)
-		print("%s: average %d across %d comments" % (user, int(sentence_avg), num_comments))
-		with open(info_fname, 'w') as f:
-			f.write(str(int(sentence_avg)))
+	history = get_history(r, user)
+	print("{}: {} comments".format(user, len(history)))
 
 def get_user_top(sort):
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
