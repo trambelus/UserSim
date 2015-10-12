@@ -44,8 +44,8 @@ If you have any questions or ideas, shoot me a PM at [/u/Trambelus.](https://www
 
 -----
 
-### Currently banned in:
+### Currently banned in 78 subreddits:
 
- /r/AceAttorney, /r/AgainstGamerGate, /r/AskReddit, /r/CFB, /r/CadenMoranDiary, /r/Calgary, /r/Cardinals, /r/CasualConversation, /r/Civcraft, /r/Cricket, /r/DarkNetMarkets, /r/Denmark, /r/DestinyTheGame, /r/Eve, /r/GlobalOffensive, /r/InternetIsBeautiful, /r/MLS, /r/NASCAR, /r/Omnipotent_League, /r/Patriots, /r/RWBY, /r/SFGiants, /r/ShitRedditSays, /r/SubredditDrama, /r/SubredditSimMeta, /r/TheWaterLew, /r/Weaselwarren, /r/Whatcouldgowrong, /r/Wishlist, /r/anime, /r/atheism, /r/australia, /r/badhistory, /r/blackladies, /r/cringepics, /r/fireemblem, /r/flicks, /r/formula1, /r/gameofthrones, /r/gaming, /r/gifs, /r/india, /r/leagueoflegends, /r/magicTCG, /r/mylittleandysonic1, /r/nba, /r/news, /r/offmychest, /r/paradoxplaza, /r/pcmasterrace, /r/reactiongifs, /r/relationships, /r/roosterteeth, /r/rupaulsdragrace, /r/science, /r/smashbros, /r/soccer, /r/syriancivilwar, /r/tf2, /r/videos, /r/worldnews, /r/wow
+/r/AceAttorney, /r/AgainstGamerGate, /r/ApocalypseRising, /r/Art, /r/AskReddit, /r/CFB, /r/CadenMoranDiary, /r/Calgary, /r/Cardinals, /r/CasualConversation, /r/Civcraft, /r/Coffee, /r/Cricket, /r/DarkNetMarkets, /r/Denmark, /r/DestinyTheGame, /r/Eve, /r/GlobalOffensive, /r/HPMOR, /r/InternetIsBeautiful, /r/KCRoyals, /r/MLS, /r/NASCAR, /r/NoStupidQuestions, /r/Omnipotent_League, /r/Patriots, /r/RWBY, /r/SFGiants, /r/SammyClassicSonicFan, /r/ShitRedditSays, /r/SubredditDrama, /r/SubredditSimMeta, /r/TheWaterLew, /r/Weaselwarren, /r/Whatcouldgowrong, /r/Wishlist, /r/abc, /r/anime, /r/atheism, /r/australia, /r/badhistory, /r/blackladies, /r/cardsagainsthumanity, /r/cringepics, /r/fireemblem, /r/flicks, /r/formula1, /r/gameofthrones, /r/gaming, /r/gifs, /r/india, /r/leagueoflegends, /r/magicTCG, /r/mylittleandysonic1, /r/nba, /r/nbacirclejerk, /r/news, /r/offmychest, /r/paradoxplaza, /r/pcmasterrace, /r/politics, /r/quityourbullshit, /r/reactiongifs, /r/relationships, /r/roosterteeth, /r/rupaulsdragrace, /r/science, /r/smashbros, /r/soccer, /r/syriancivilwar, /r/tf2, /r/todayilearned, /r/unitedkingdom, /r/videos, /r/worldnews, /r/worldpowers, /r/wow, /r/wsgy
 
-*List updated: 2015-08-10 1628 EDT*
+*List updated: 2015-10-12 1509 EDT*

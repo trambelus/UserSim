@@ -76,8 +76,8 @@ MIN_COMMENTS = 25	# Users with less than this number of comments won't be attemp
 
 TRIES = 1000 # Max number of times to try each comment generation
 
-MONITOR_PROCESSES = 4
-INBOX_LIMIT = 30*MONITOR_PROCESSES # Max mentions to pull from inbox
+MONITOR_PROCESSES = 1
+INBOX_LIMIT = 1000*MONITOR_PROCESSES # Max mentions to pull from inbox
 
 NO_REPLY = ['trollabot','ploungersimulator']
 STATE_SIZE = 2
@@ -131,6 +131,8 @@ class PText(markovify.Text):
 		if re.search(reject_pat, filtered_str):
 			# Not counting emotes, there are no awkward characters.
 			return False
+		if filtered_str in get_footer():
+			return False
 		return True
 
 	# def make_sentence(self, *args, **kwargs):
@@ -177,8 +179,10 @@ def get_history(r, user, limit=LIMIT, subreddit=None):
 							total_sentences += 1
 				c_finished = True
 			except praw.errors.HTTPException as ex:
-				log(ex)
+				log(str(ex))
 				pass
+			except praw.errors.NotFound as ex:
+				break
 		num_comments = len(body)
 		if num_comments >= MIN_COMMENTS and recursion_testing:
 			return (0, 0, 0)
@@ -284,7 +288,7 @@ def try_reply(q, com, msg):
 def dfmt(created_utc):
 	return time.strftime("%Y-%m-%d %X",time.localtime(created_utc))
 
-def process(q, com, val):
+def process(q, com, val, index):
 	"""
 	Multiprocessing target. Gets the Markov model, uses it to get a sentence, and posts that as a reply.
 	"""
@@ -330,7 +334,7 @@ def process(q, com, val):
 	try:
 		if isinstance(model, str):
 			try_reply(q, com,(model % target_user) + get_footer())
-			log('%s: %s by %s in %s on %s:\n%s' % (id, target_user, author, sub, ctime, model % target_user), additional='\n')
+			log('%s: (%d) %s by %s in %s on %s:\n%s' % (id, index, target_user, author, sub, ctime, model % target_user), additional='\n')
 		else:
 			if sentence_avg == 0:
 				try_reply(q, com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
@@ -346,19 +350,19 @@ def process(q, com, val):
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
-			log('%s: %s (%d) by %s in %s on %s, reply' % (id, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
+			log('%s: (%d) %s (%d) by %s in %s on %s, reply' % (id, index, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
 			target_user = target_user.replace('_','\_')
 			try_reply(q, com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
-		log("%s: %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
+		log("%s: (%d) %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, index, target_user, sentence_avg, author, sub, ctime, str(ex)))
 		q.put(id)
 	except praw.errors.Forbidden as ex:
 		log("Could not reply to comment by %s in %s: %s" % (author, sub, str(ex)))
 	except praw.errors.APIException:
 		log("Parent comment by %s in %s was deleted" % (author, sub))
 	except praw.errors.HTTPException:
-		log("%s: %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, target_user, sentence_avg, author, sub, ctime, str(ex)))
+		log("%s: (%d) %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, index, target_user, sentence_avg, author, sub, ctime, str(ex)))
 		q.put(id)
 
 def monitor_sub(q, index):
@@ -383,11 +387,14 @@ def monitor_sub(q, index):
 			for com in mentions:
 				if int(com.name[3:], 36) % MONITOR_PROCESSES != index: 
 					continue # One of the other monitor threads is handling this one; skip
+				if com.name in started:
+					continue # We've already started on this one, move on
+				started.append(com.name)
 				try:
 					if com.subreddit == None:
 						continue
 					if com.subreddit.display_name in banned:
-						log("%s: Ignored request from banned subreddit %s" % (com.name,com.subreddit.display_name))
+						log("%s: (%d) Ignored request from banned subreddit %s" % (com.name,index+1,com.subreddit.display_name))
 						continue
 				except praw.errors.Forbidden:
 					continue
@@ -399,11 +406,12 @@ def monitor_sub(q, index):
 						continue # We've already hit this one, move on
 				except praw.errors.Forbidden:
 					continue
-				if com.name in started:
-					continue # We've already started on this one, move on
 				
 				warnings.simplefilter("ignore")
-				mp.Process(target=process, args=(q, com, res.group(0))).start()
+				try:
+					mp.Process(target=process, args=(q, com, res.group(0), index+1)).start()
+				except Exception:
+					continue
 			while q.qsize() > 0:
 				item = q.get()
 				if item == 'clear':
@@ -418,7 +426,7 @@ def monitor_sub(q, index):
 			continue # This one was completely trashing the console, so handle it silently.
 		# General-purpose catch to make the script unbreakable.
 		except Exception as ex:
-			log(str(type(ex)) + ": " + str(ex))
+			log(str(index+1) + ": " + str(type(ex)) + ": " + str(ex))
 
 def monitor():
 	"""
@@ -494,6 +502,23 @@ def open_by_id(id):
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
 	webbrowser.open_new_tab(r.get_info(thing_id=id).permalink)
 
+def get_banned():
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
+	with open(BANNED_FILE, 'r') as f:
+		banned = [s.rstrip() for s in f.readlines()]
+	c = 0
+	with open("bancount.txt", 'w') as f:
+		for sub in banned:
+			try:
+				b = r.get_subreddit(sub).subscribers
+				c += b
+			except praw.errors.Forbidden:
+				b = "Unknown"
+			f.write("%s: %s\n" % (sub, b))
+		f.write("----------------\nTotal: %d" % c)
+	print("Banned from %d subs, %d subscribers" % len(banned), c)
+
+
 if __name__ == '__main__':
 	if len(sys.argv) >= 3:
 		if sys.argv[1].lower() == 'manual':
@@ -510,5 +535,7 @@ if __name__ == '__main__':
 	elif len(sys.argv) > 1:
 		if sys.argv[1].lower() == 'upgrade':
 			upgrade()
+		elif sys.argv[1].lower() == 'banned':
+			get_banned()
 	else:
 		monitor()
