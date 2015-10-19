@@ -49,6 +49,31 @@ def silent():
 		with nostderr():
 			yield
 
+
+def getch():
+    """
+    Get a single character from standard input.
+
+    Returns:
+    bytes/str (python2) with that character.
+    """
+    import platform
+    if platform.system() == 'Windows':
+        import msvcrt
+        return msvcrt.getch()
+    else:
+        # it's a Unix system!
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch.encode()
+
+
 import markovify
 import re
 with silent():
@@ -58,16 +83,17 @@ import time
 import rlogin
 from unidecode import unidecode
 import os
+import os.path
 import string
-import msvcrt
 import warnings
 with nostderr(): # Stupid noisy imports
 	import nltk
 import random
+import tempfile
 
 LIMIT = 1000 # Max comments to pull from user history
 
-USERMOD_DIR = 'D:\\usermodelsb\\' # Cache directory
+USERMOD_DIR = tempfile.gettempdir()  # Cache directory
 
 MIN_COMMENTS = 25	# Users with less than this number of comments won't be attempted.
 # The Markov chains usually turn out a lot worse with less input.
@@ -243,8 +269,8 @@ def get_markov(r, id, user):
 	Given a user, return a Markov state model for them,
 	either from the cache or fresh from reddit via praw.
 	"""
-	txt_fname = USERMOD_DIR + '%s.txt' % user
-	json_fname = USERMOD_DIR + '%s.json' % user
+	txt_fname = os.path.join(USERMOD_DIR, '%s.txt' % user)
+	json_fname = os.path.join(USERMOD_DIR, '%s.json' % user)
 	# Stores two files: some-reddit-user.txt for the raw corpus,
 	# and some-reddit-user.json for the structure holding the Markov state model.
 	def from_cache():
@@ -441,7 +467,7 @@ def wait(q):
 	c = clear 'started' list, in case of an error in a processing script
 	"""
 	while True:
-		inp = msvcrt.getch()
+		inp = getch()
 		if inp == b'q':
 			log("Quit")
 			q.put('quit')
