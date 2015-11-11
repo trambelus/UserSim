@@ -321,7 +321,7 @@ def process(q, com, val, index):
 	id = com.name
 	author = com.author.name if com.author else '[deleted]'
 	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (platform.system(),VERSION,author))
 	com = r.get_info(thing_id=id)
 	sub = com.subreddit.display_name
 	ctime = time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))
@@ -394,7 +394,7 @@ def monitor_sub(q, index):
 	started = []
 	with open(BANNED_FILE, 'r') as f:
 		banned = [s.rstrip() for s in f.readlines()]
-	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, main thread %d" % (VERSION, index))
+	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, main thread %d" % (platform.system(),VERSION, index))
 	req_pat = re.compile(r"\+(\s)?/u/%s\s?(\[.\])?\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
 	with silent():
 		r = get_r()
@@ -494,20 +494,20 @@ def manual(user, num):
 	Don't tell them.
 	"""
 	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating in manual mode" % VERSION)
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating in manual mode" % (platform.system(),VERSION))
 	(model, sentence_avg) = get_markov(r, 'manual', user)
 	for i in range(sentence_avg):
 		log(unidecode(model.make_sentence()))
 
 def count(user):
 	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, counting comments of %s" % (VERSION,user))
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, counting comments of %s" % (platform.system(),VERSION,user))
 	(history, num_comments, sentence_avg) = get_history(r, user)
 	print("{}: {} comments, average {:.3f} sentences per comment".format(user, num_comments, sentence_avg))
 
 def upgrade():
 	files = [f[:-4] for f in os.listdir(USERMOD_DIR) if f[-4:] == '.txt']
-	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, upgrading cache" % VERSION)
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, upgrading cache" % (platform.system(),VERSION))
 	for user in files:
 		info_fname = os.path.join(USERMOD_DIR, user + '.info')
 		if os.path.isfile(info_fname):
@@ -518,7 +518,7 @@ def upgrade():
 			f.write(str(int(sentence_avg)))
 
 def get_user_top(sort):
-	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, updating local user cache" % (platform.system(),VERSION))
 	redditor = r.get_redditor(USER)
 	comments = redditor.get_comments(limit=None, sort=sort)
 	for c in comments:
@@ -528,11 +528,11 @@ def get_user_top(sort):
 
 def open_by_id(id):
 	import webbrowser
-	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, updating local user cache" % (platform.system(),VERSION))
 	webbrowser.open_new_tab(r.get_info(thing_id=id).permalink)
 
 def get_banned():
-	r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, updating local user cache" % VERSION)
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, updating local user cache" % (platform.system(),VERSION))
 	with open(BANNED_FILE, 'r') as f:
 		banned = [s.rstrip() for s in f.readlines()]
 	c = 0
