@@ -297,8 +297,7 @@ def process(q, com, val, index):
 		return
 	id = com.name
 	author = com.author.name if com.author else '[deleted]'
-	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (platform.system(),VERSION,author))
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (platform.system(),VERSION,author))
 	com = r.get_info(thing_id=id)
 	sub = com.subreddit.display_name
 	ctime = time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))
@@ -373,16 +372,14 @@ def monitor_sub(q, index):
 		banned = [s.rstrip() for s in f.readlines()]
 	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, main thread %d" % (platform.system(),VERSION, index))
 	req_pat = re.compile(r"\+(\s)?/u/%s\s?(\[.\])?\s+(/u/)?[\w\d\-_]{3,20}" % USER.lower())
-	with silent():
-		r = get_r()
+	r = get_r()
 	t0 = time.time()
 	log('Started main thread %d' % (index+1))
 	while True:
 		try:
 			# Every 55 minutes, refresh the login.
 			if (time.time() - t0 > 55*60):
-				with silent():
-					r = get_r()
+				r = get_r()
 				log("Refreshed login for thread %d" % (index+1))
 				t0 = time.time()
 			mentions = r.get_inbox(limit=INBOX_LIMIT)
@@ -427,8 +424,7 @@ def monitor_sub(q, index):
 		except praw.errors.InvalidComment:
 			continue # This one was completely trashing the console, so handle it silently.
 		except AssertionError:
-			with silent():
-				r = get_r()
+			r = get_r()
 		# General-purpose catch to make the script unbreakable.
 		except Exception as ex:
 			log(str(index+1) + ": " + str(type(ex)) + ": " + str(ex))
@@ -470,15 +466,13 @@ def manual(user, num):
 	They never knew.
 	Don't tell them.
 	"""
-	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating in manual mode" % (platform.system(),VERSION))
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating in manual mode" % (platform.system(),VERSION))
 	(model, sentence_avg) = get_markov(r, 'manual', user)
 	for i in range(sentence_avg):
 		log(unidecode(model.make_sentence()))
 
 def count(user):
-	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, counting comments of %s" % (platform.system(),VERSION,user))
+	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, counting comments of %s" % (platform.system(),VERSION,user))
 	(history, num_comments, sentence_avg) = get_history(r, user)
 	print("{}: {} comments, average {:.3f} sentences per comment".format(user, num_comments, sentence_avg))
 
