@@ -64,6 +64,7 @@ import nltk
 import random
 import tempfile
 import threading
+import platform
 
 LIMIT = 1000 # Max comments to pull from user history
 
