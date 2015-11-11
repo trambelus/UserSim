@@ -226,7 +226,7 @@ def get_markov(r, id, user):
 		#log("%s: Reading cache for %s" % (id, user))
 		mod_time = os.path.getmtime(txt_fname)
 		if time.time() - mod_time > REFRESH_THRESHOLD:
-			log("Refreshing info for %s" % user, console_only=True)
+			log("%s: Refreshing info for %s" % (id, user), console_only=True)
 			return from_scratch()
 		f_txt = open(txt_fname, 'r')
 		f_json = open(json_fname, 'r')
@@ -245,7 +245,7 @@ def get_markov(r, id, user):
 
 	def from_scratch():
 		# No cache was found: build the model from scratch
-		#log("%s: Getting history for %s" % (id, user))
+		log("%s: Getting history for %s" % (id, user))
 		(history, num_comments, sentence_avg) = get_history(r, user)
 		if history == None:
 			return ("User '%s' not found.", 0)
@@ -254,7 +254,7 @@ def get_markov(r, id, user):
 			return ("I see what you're trying to do, %s. It won't work.", 0)
 		if num_comments < MIN_COMMENTS:
 			return ("User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS), 0)
-		#log("%s: Building model for %s" % (id, user))
+		log("%s: Building model for %s" % (id, user))
 		try:
 			model = PText(history, state_size=STATE_SIZE)
 		except IndexError:
