@@ -303,6 +303,8 @@ def process(q, com, val, index):
 	author = com.author.name if com.author else '[deleted]'
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (platform.system(),VERSION,author))
 	com = r.get_info(thing_id=id)
+	if com == None:
+		return
 	sub = com.subreddit.display_name
 	ctime = time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))
 	val = val.replace('\n',' ')
