@@ -245,7 +245,7 @@ def get_markov(r, id, user):
 
 	def from_scratch():
 		# No cache was found: build the model from scratch
-		log("%s: Getting history for %s" % (id, user))
+		log("%s: Getting history for %s" % (id, user), console_only=True)
 		(history, num_comments, sentence_avg) = get_history(r, user)
 		if history == None:
 			return ("User '%s' not found.", 0)
@@ -254,7 +254,7 @@ def get_markov(r, id, user):
 			return ("I see what you're trying to do, %s. It won't work.", 0)
 		if num_comments < MIN_COMMENTS:
 			return ("User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS), 0)
-		log("%s: Building model for %s" % (id, user))
+		log("%s: %d comments found, building model for %s" % (id, num_comments, user), console_only=True)
 		try:
 			model = PText(history, state_size=STATE_SIZE)
 		except IndexError:
