@@ -19,7 +19,7 @@
 
 USER = 'User_Simulator'
 APP = 'Simulator'
-VERSION = '1.9.8'
+VERSION = '1.9.9'
 
 import sys
 import contextlib
@@ -147,7 +147,7 @@ class PText(markovify.Text):
 		in a randomly-generated sentence. 
 		"""
 		emote_pat = re.compile(r"\[.+?\]\(\/.+?\)")
-		reject_pat = re.compile(r"(^')|('$)|\s'|'\s|([\"(\(\)\[\])])")
+		reject_pat = re.compile(r"(^')|('$)|\s'|'\s|([\"(\(\)\[\])])|(github.com/trambelus/UserSim)|(/r/User_Simulator)|(~\ [\w\d\-_]{3,20}\ -----)")
 		# Decode unicode, mainly to normalize fancy quotation marks
 		decoded = unidecode(sentence)
 		# Sentence shouldn't contain problematic characters
@@ -296,7 +296,7 @@ def get_markov(r, id, user):
 	else:
 		return from_scratch()
 
-def try_reply(q, com, msg):
+def try_reply(com, msg):
 	try:
 		if USER.lower() in [rep.author.name.lower() for rep in com.replies if rep.author != None]:
 			return
@@ -322,6 +322,9 @@ def process(q, com, val, index):
 		return
 	id = com.name
 	author = com.author.name if com.author else '[deleted]'
+	with silent():
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
+	com = r.get_info(thing_id=id)
 	sub = com.subreddit.display_name
 	ctime = time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))
 	val = val.replace('\n',' ')
@@ -332,13 +335,11 @@ def process(q, com, val, index):
 		try_reply(com,"I see what you're trying to do.%s" % get_footer())
 		return
 	if ('+/u/%s' % USER).lower() in target_user.lower():
-		try_reply(q, com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
+		try_reply(com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
 		return
 	idx = com.body.lower().find(target_user.lower())
 	target_user = com.body[idx:idx+len(target_user)]
 	r_subreddit = re.compile(r"/?r/[\w\d_]{0,21}")
-	with silent():
-		r = rlogin.get_auth_r(USER, APP, VERSION, uas="Windows:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (VERSION,author))
 	if target_user[:3] == '/u/':
 		target_user = target_user[3:]
 	if target_user == 'YOURUSERNAMEHERE':
@@ -358,17 +359,17 @@ def process(q, com, val, index):
 	(model, sentence_avg) = get_markov(r, id, target_user)
 	try:
 		if isinstance(model, str):
-			try_reply(q, com,(model % target_user) + get_footer())
+			try_reply(com,(model % target_user) + get_footer())
 			log('%s: (%d) %s by %s in %s on %s:\n%s' % (id, index, target_user, author, sub, ctime, model % target_user), additional='\n')
 		else:
 			if sentence_avg == 0:
-				try_reply(q, com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 				return
 			reply_r = []
 			for _ in range(random.randint(1,sentence_avg)):
 				tmp_s = model.make_sentence(tries=TRIES)
 				if tmp_s == None:
-					try_reply(q, com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+					try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
 					return
 				reply_r.append(tmp_s)
 			reply_r = ' '.join(reply_r)
@@ -377,7 +378,7 @@ def process(q, com, val, index):
 				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s: (%d) %s (%d) by %s in %s on %s, reply' % (id, index, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
 			target_user = target_user.replace('_','\_')
-			try_reply(q, com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
+			try_reply(com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log("%s: (%d) %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, index, target_user, sentence_avg, author, sub, ctime, str(ex)))
@@ -391,6 +392,7 @@ def process(q, com, val, index):
 		q.put(id)
 
 def monitor_sub(q, index):
+
 	started = []
 	with open(BANNED_FILE, 'r') as f:
 		banned = [s.rstrip() for s in f.readlines()]
@@ -449,9 +451,13 @@ def monitor_sub(q, index):
 					started.remove(item)
 		except praw.errors.InvalidComment:
 			continue # This one was completely trashing the console, so handle it silently.
+		except AssertionError:
+			with silent():
+				r = get_r()
 		# General-purpose catch to make the script unbreakable.
 		except Exception as ex:
 			log(str(index+1) + ": " + str(type(ex)) + ": " + str(ex))
+			time.sleep(1)
 
 def monitor():
 	"""
@@ -542,7 +548,6 @@ def get_banned():
 			f.write("%s: %s\n" % (sub, b))
 		f.write("----------------\nTotal: %d" % c)
 	print("Banned from %d subs, %d subscribers" % len(banned), c)
-
 
 if __name__ == '__main__':
 	if len(sys.argv) >= 3:
