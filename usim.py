@@ -63,6 +63,7 @@ import warnings
 import nltk
 import random
 import tempfile
+import threading
 
 LIMIT = 1000 # Max comments to pull from user history
 
@@ -439,7 +440,7 @@ def monitor():
 	and launches a single process for every new request it finds.
 	"""
 	q = mp.Queue()
-	quit_proc = mp.Process(target=wait, args=(q,))
+	quit_proc = threading.Thread(target=wait, args=(q,))
 	quit_proc.start()
 	for i in range(MONITOR_PROCESSES):
 		mp.Process(target=monitor_sub, args=(q,i)).start()
