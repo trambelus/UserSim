@@ -414,6 +414,7 @@ def monitor_sub(q, index):
 				
 				warnings.simplefilter("ignore")
 				try:
+					log("%s: launching subprocess" % (com.name), console_only=True)
 					mp.Process(target=process, args=(q, com, res.group(0), index+1)).start()
 				except Exception:
 					continue
