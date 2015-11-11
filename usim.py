@@ -49,30 +49,6 @@ def silent():
 		with nostderr():
 			yield
 
-
-def getch():
-    """
-    Get a single character from standard input.
-
-    Returns:
-    bytes/str (python2) with that character.
-    """
-    import platform
-    if platform.system() == 'Windows':
-        import msvcrt
-        return msvcrt.getch()
-    else:
-        # it's a Unix system!
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch.encode()
-
 import markovify
 import re
 import praw
@@ -475,12 +451,12 @@ def wait(q):
 	c = clear 'started' list, in case of an error in a processing script
 	"""
 	while True:
-		inp = getch()
-		if inp == b'q':
+		inp = input()
+		if inp == 'q':
 			log("Quit")
 			q.put('quit')
 			break
-		if inp == b'c':
+		if inp == 'c':
 			q.put('clear')
 
 def manual(user, num):
