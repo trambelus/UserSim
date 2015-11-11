@@ -85,6 +85,7 @@ STATE_SIZE = 2
 LOGFILE = 'usim.log'
 NAMEFILE = 'names.log'
 BANNED_FILE = 'banned.txt'
+LOGFILEALL = 'usimfeed.log'
 
 INFO_URL = 'https://github.com/trambelus/UserSim'
 SUB_URL = '/r/User_Simulator'
@@ -108,6 +109,8 @@ def log(*msg, file=None, additional='', console_only=False):
 		if not console_only:
 			with open(LOGFILE, 'a') as f:
 				f.write(output + '\n')
+		with open(LOGFILEALL, 'a') as f:
+			f.write(output + additional + '\n')
 
 class PText(markovify.Text):
 	"""
