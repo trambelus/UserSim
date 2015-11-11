@@ -75,8 +75,7 @@ def getch():
 
 import markovify
 import re
-with silent():
-	import praw
+import praw
 import multiprocessing as mp
 import time
 import rlogin
@@ -85,8 +84,7 @@ import os
 import os.path
 import string
 import warnings
-with nostderr(): # Stupid noisy imports
-	import nltk
+import nltk
 import random
 import tempfile
 
