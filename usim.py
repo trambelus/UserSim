@@ -383,6 +383,7 @@ def monitor_sub(q, index):
 	t0 = time.time()
 	log('Started main thread %d' % (index+1))
 	while True:
+		log("Restarting loop", console_only=True)
 		try:
 			# Every 55 minutes, refresh the login.
 			if (time.time() - t0 > 55*60):
@@ -434,10 +435,12 @@ def monitor_sub(q, index):
 			continue # This one was completely trashing the console, so handle it silently.
 		except AssertionError:
 			r = get_r()
+			continue
 		# General-purpose catch to make the script unbreakable.
 		except Exception as ex:
 			log(str(index+1) + ": " + str(type(ex)) + ": " + str(ex))
 			time.sleep(1)
+			continue
 
 def monitor():
 	"""
