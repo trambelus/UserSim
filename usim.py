@@ -60,7 +60,7 @@ import os
 import os.path
 import string
 import warnings
-import nltk
+#import nltk
 import random
 import tempfile
 import threading
@@ -228,6 +228,7 @@ def get_markov(r, id, user):
 		if time.time() - mod_time > REFRESH_THRESHOLD:
 			log("%s: Refreshing info for %s" % (id, user), console_only=True)
 			return from_scratch()
+		log("%s: Using cache for %s" % (id, user), console_only=True)
 		f_txt = open(txt_fname, 'r')
 		f_json = open(json_fname, 'r')
 		f_info = open(info_fname, 'r')
@@ -419,16 +420,16 @@ def monitor_sub(q, index):
 					process(q, com, res.group(0), index+1)
 				except Exception:
 					continue
-			while q.qsize() > 0:
-				item = q.get()
-				if item == 'clear':
-					log("Clearing list of started tasks")
-					started = []
-				elif item == 'quit':
-					log("Stopping main process")
-					return
-				elif item in started:
-					started.remove(item)
+				while q.qsize() > 0:
+					item = q.get()
+					if item == 'clear':
+						log("Clearing list of started tasks")
+						started = []
+					elif item == 'quit':
+						log("Stopping main process")
+						return
+					elif item in started:
+						started.remove(item)
 		except praw.errors.InvalidComment:
 			continue # This one was completely trashing the console, so handle it silently.
 		except AssertionError:
