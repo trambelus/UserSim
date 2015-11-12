@@ -460,7 +460,10 @@ def wait(q):
 	c = clear 'started' list, in case of an error in a processing script
 	"""
 	while True:
-		inp = input()
+		try:
+			inp = input()
+		except:
+			return
 		if inp == 'q':
 			log("Quit")
 			q.put('quit')
