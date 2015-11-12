@@ -97,20 +97,20 @@ def get_footer():
 	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
 
 
-def log(*msg, file=None, additional='', console_only=False):
+def log(*msg, additional='', console_only=False):
 	"""
 	Prepends a timestamp and prints a message to the console and LOGFILE
 	"""
 	output = "%s:\t%s" % (time.strftime("%Y-%m-%d %X"), ' '.join(msg))
-	if file:
-		print(output, file=file)
-	else:
+	try:
 		print(output + additional)
-		if not console_only:
-			with open(LOGFILE, 'a') as f:
-				f.write(output + '\n')
-		with open(LOGFILEALL, 'a') as f:
-			f.write(output + additional + '\n')
+	except:
+		pass
+	if not console_only:
+		with open(LOGFILE, 'a') as f:
+			f.write(output + '\n')
+	with open(LOGFILEALL, 'a') as f:
+		f.write(output + additional + '\n')
 
 class PText(markovify.Text):
 	"""
