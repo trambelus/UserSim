@@ -242,6 +242,7 @@ def get_markov(r, id, user):
 			return from_scratch()
 		f_txt.close()
 		f_json.close()
+		f_info.close()
 		return (PText(text, state_size=STATE_SIZE, chain=markovify.Chain.from_json(json)), sentence_avg)
 
 	def from_scratch():
@@ -451,7 +452,8 @@ def monitor():
 	quit_proc = threading.Thread(target=wait, args=(q,))
 	quit_proc.start()
 	for i in range(MONITOR_PROCESSES):
-		mp.Process(target=monitor_sub, args=(q,i)).start()
+		#mp.Process(target=monitor_sub, args=(q,i)).start()
+		monitor_sub(q,i)
 	
 def wait(q):
 	"""
@@ -483,8 +485,7 @@ def manual(user, num):
 	"""
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating in manual mode" % (platform.system(),VERSION))
 	(model, sentence_avg) = get_markov(r, 'manual', user)
-	for i in range(sentence_avg):
-		log(unidecode(model.make_sentence()))
+	print(' '.join([unidecode(model.make_sentence()) for i in range(sentence_avg)]))
 
 def count(user):
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, counting comments of %s" % (platform.system(),VERSION,user))

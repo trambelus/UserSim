@@ -39,9 +39,20 @@ def set_auth(r, app_name, username, version):
 	return token
 
 def get_auth_r(username, app_name, version='1.0', uas=None):
-	[client_id, _, _] = find_app_info(app_name)
+	# Fail silently if local app lookup fails
+	try:
+		[client_id, _, _] = find_app_info(app_name)
+	except FileNotFoundError:
+		client_id = None
+	except StopIteration:
+		client_id = None
+
 	if uas == None:
 		uas = "Windows:{0}:{1} by {2}, id={3}".format(app_name, version, username, client_id)
 	r = praw.Reddit(uas)
+
+	if client_id == None:
+		return r
+
 	set_auth(r, app_name, username, version)
 	return r
