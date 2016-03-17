@@ -432,6 +432,9 @@ def monitor_sub(q, index):
 						return
 					elif item in started:
 						started.remove(item)
+
+				time.sleep(1)
+				
 		except praw.errors.InvalidComment:
 			continue # This one was completely trashing the console, so handle it silently.
 		except AssertionError:
