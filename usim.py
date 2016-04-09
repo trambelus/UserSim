@@ -175,7 +175,7 @@ def get_history(r, user, limit=LIMIT, subreddit=None):
 					if ('+/u/%s' % USER.lower()) not in c.body.lower():
 						recursion_testing = False
 					if (not c.distinguished) and ((not subreddit) or c.subreddit.display_name == subreddit):
-						body.append(c.body)
+						body.append(re.sub(r'(?<![\\ ])>.*(?=\n\n)', '',  c.body)) # Use a regex to remove any markdown quotes
 						try:
 							total_sentences += len(markovify.split_into_sentences(c.body))
 						except Exception:
