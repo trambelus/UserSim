@@ -384,7 +384,8 @@ def monitor_sub(q, index):
 	t0 = time.time()
 	log('Started main thread %d' % (index+1))
 	while True:
-		log("Restarting loop", console_only=True)
+		#log("Restarting loop", console_only=True)
+		time.sleep(1)
 		try:
 			# Every 55 minutes, refresh the login.
 			if (time.time() - t0 > 55*60):
