@@ -433,7 +433,8 @@ def monitor_sub(q, index):
 					log("%s: processing" % (com.name), console_only=True)
 					#mp.Process(target=process, args=(q, com, res.group(0), index+1)).start()
 					process(q, com, res.group(0), index+1)
-				except Exception:
+				except Exception as ex:
+					log("%s: exception: %s" % (com.name, ex))
 					continue
 				while q.qsize() > 0:
 					item = q.get()
