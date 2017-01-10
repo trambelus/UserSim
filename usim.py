@@ -373,7 +373,8 @@ def process(q, com, val, index):
 			if com.subreddit.display_name == 'EVEX':
 				target = target + random.choice(['-senpai','-kun','-chan','-san','-sama'])
 			log('%s: (%d) %s (%d) by %s in %s on %s, reply' % (id, index, target, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
-			target = target.replace('_','\_')
+			if (target[:3] != '/r/'):
+				target = target.replace('_','\_')
 			try_reply(com,'%s\n\n ~ %s%s' % (reply,target,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
