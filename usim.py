@@ -351,39 +351,39 @@ def process(q, com, val, index):
 		pass
 	except praw.errors.HTTPException:
 		time.sleep(1)
-	(model, sentence_avg) = get_markov(r, id, target_user)
+	(model, sentence_avg) = get_markov(r, id, target)
 	try:
 		if isinstance(model, str):
-			try_reply(com,(model % target_user) + get_footer())
-			log('%s: (%d) %s by %s in %s on %s:\n%s' % (id, index, target_user, author, sub, ctime, model % target_user), additional='\n')
+			try_reply(com,(model % target) + get_footer())
+			log('%s: (%d) %s by %s in %s on %s:\n%s' % (id, index, target, author, sub, ctime, model % target), additional='\n')
 		else:
 			if sentence_avg == 0:
-				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target,get_footer()))
 				return
 			reply_r = []
 			for _ in range(random.randint(1,sentence_avg)):
 				tmp_s = model.make_sentence(tries=TRIES)
 				if tmp_s == None:
-					try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target_user,get_footer()))
+					try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target,get_footer()))
 					return
 				reply_r.append(tmp_s)
 			reply_r = ' '.join(reply_r)
 			reply = unidecode(reply_r)
 			if com.subreddit.display_name == 'EVEX':
-				target_user = target_user + random.choice(['-senpai','-kun','-chan','-san','-sama'])
-			log('%s: (%d) %s (%d) by %s in %s on %s, reply' % (id, index, target_user, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
-			target_user = target_user.replace('_','\_')
-			try_reply(com,'%s\n\n ~ %s%s' % (reply,target_user,get_footer()))
+				target = target + random.choice(['-senpai','-kun','-chan','-san','-sama'])
+			log('%s: (%d) %s (%d) by %s in %s on %s, reply' % (id, index, target, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
+			target = target.replace('_','\_')
+			try_reply(com,'%s\n\n ~ %s%s' % (reply,target,get_footer()))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
-		log("%s: (%d) %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, index, target_user, sentence_avg, author, sub, ctime, str(ex)))
+		log("%s: (%d) %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, index, target, sentence_avg, author, sub, ctime, str(ex)))
 		q.put(id)
 	except praw.errors.Forbidden as ex:
 		log("Could not reply to comment by %s in %s: %s" % (author, sub, str(ex)))
 	except praw.errors.APIException:
 		log("Parent comment by %s in %s was deleted" % (author, sub))
 	except praw.errors.HTTPException:
-		log("%s: (%d) %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, index, target_user, sentence_avg, author, sub, ctime, str(ex)))
+		log("%s: (%d) %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, index, target, sentence_avg, author, sub, ctime, str(ex)))
 		q.put(id)
 
 def monitor_sub(q, index):
