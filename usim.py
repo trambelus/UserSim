@@ -157,14 +157,23 @@ class PText(markovify.Text):
 			sentence = " ".join(word.split("::")[0] for word in words)
 			return sentence
 
-def get_history(r, user, limit=LIMIT, subreddit=None):
+def get_comments(r, source, limit):
+	if (source[:3]) == '/r/':
+		sub = r.get_subreddit(source[3:])
+		return sub.get_comments(limit=limit, sort='new')
+	else:
+		redditor = r.get_redditor(source)
+		return redditor.get_comments(limit=limit)
+
+def get_history(r, source, limit=LIMIT, subreddit=None):
 	"""
-	Grabs a user's most recent comments and returns them as a single string.
+	Grabs a user's or sub's most recent comments and returns them as a single string.
 	The average will probably be 20k-30k words.
 	"""
 	try:
-		redditor = r.get_redditor(user)
-		comments = redditor.get_comments(limit=limit)
+		comments = get_comments(r, source, limit)
+		if comments == None:
+			return (None, None, None)
 		c_finished = False
 		while not c_finished:
 			body = []
@@ -182,6 +191,8 @@ def get_history(r, user, limit=LIMIT, subreddit=None):
 							# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
 							total_sentences += 1
 				c_finished = True
+			except praw.errors.InvalidSubreddit:
+				return (None, None, None)
 			except praw.errors.HTTPException as ex:
 				log(str(ex))
 				pass
@@ -212,23 +223,24 @@ def levenshteinDistance(s1,s2):
 		distances = newDistances
 	return distances[-1]
 
-def get_markov(r, id, user):
+def get_markov(r, id, source):
 	"""
-	Given a user, return a Markov state model for them,
+	Given a source, return a Markov state model for them,
 	either from the cache or fresh from reddit via praw.
 	"""
-	txt_fname = os.path.join(USERMOD_DIR, '%s.txt' % user)
-	json_fname = os.path.join(USERMOD_DIR, '%s.json' % user)
-	info_fname = os.path.join(USERMOD_DIR, '%s.info' % user)
-	# Stores two files: some-reddit-user.txt for the raw corpus,
-	# and some-reddit-user.json for the structure holding the Markov state model.
+	source_fname = source.replace('/','=') # because '/' won't work in any filename anywhere
+	txt_fname = os.path.join(USERMOD_DIR, '%s.txt' % source_fname)
+	json_fname = os.path.join(USERMOD_DIR, '%s.json' % source_fname)
+	info_fname = os.path.join(USERMOD_DIR, '%s.info' % source_fname)
+	# Stores two files: some-reddit-source.txt for the raw corpus,
+	# and some-reddit-source.json for the structure holding the Markov state model.
 	def from_cache():
-		#log("%s: Reading cache for %s" % (id, user))
+		#log("%s: Reading cache for %s" % (id, source))
 		mod_time = os.path.getmtime(txt_fname)
 		if time.time() - mod_time > REFRESH_THRESHOLD:
-			log("%s: Refreshing info for %s" % (id, user), console_only=True)
+			log("%s: Refreshing info for %s" % (id, source), console_only=True)
 			return from_scratch()
-		log("%s: Using cache for %s" % (id, user), console_only=True)
+		log("%s: Using cache for %s" % (id, source), console_only=True)
 		f_txt = open(txt_fname, 'r')
 		f_json = open(json_fname, 'r')
 		f_info = open(info_fname, 'r')
@@ -247,20 +259,21 @@ def get_markov(r, id, user):
 
 	def from_scratch():
 		# No cache was found: build the model from scratch
-		log("%s: Getting history for %s" % (id, user), console_only=True)
-		(history, num_comments, sentence_avg) = get_history(r, user)
+		type_str = "Subreddit" if source[:3] == '/r/' else "User"
+		log("%s: Getting history for %s" % (id, source), console_only=True)
+		(history, num_comments, sentence_avg) = get_history(r, source)
 		if history == None:
-			return ("User '%s' not found.", 0)
+			return ("%s '%%s' not found." % type_str, 0)
 		if history == 0:
-			log('User %s is attempting recursion' % user)
+			log('User %s is attempting recursion' % source)
 			return ("I see what you're trying to do, %s. It won't work.", 0)
 		if num_comments < MIN_COMMENTS:
-			return ("User '%%s' has %d comment%s in history; minimum requirement is %d." % (num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS), 0)
-		log("%s: %d comments found, building model for %s" % (id, num_comments, user), console_only=True)
+			return ("%s '%%s' has %d comment%s in history; minimum requirement is %d." % (type_str, num_comments,'' if num_comments == 1 else 's', MIN_COMMENTS), 0)
+		log("%s: %d comments found, building model for %s" % (id, num_comments, source), console_only=True)
 		try:
 			model = PText(history, state_size=STATE_SIZE)
 		except IndexError:
-			return ("Error: User '%s' is too dank to simulate.", 0)
+			return ("Error: %s '%%s' is too dank to simulate." % type_str, 0)
 		f = open(txt_fname, 'w')
 		f.write(unidecode(history))
 		f.close()
@@ -312,28 +325,28 @@ def process(q, com, val, index):
 	val = val.replace('\n',' ')
 	val = val.replace('\t',' ')
 	val = val.replace(chr(160),' ')
-	target_user = val[val.rfind(' ')+1:].strip()
+	target = val[val.rfind(' ')+1:].strip()
 	if author.lower() in NO_REPLY:
 		try_reply(com,"I see what you're trying to do.%s" % get_footer())
 		return
-	if ('+/u/%s' % USER).lower() in target_user.lower():
+	if ('+/u/%s' % USER).lower() in target.lower():
 		try_reply(com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
 		return
-	idx = com.body.lower().find(target_user.lower())
-	target_user = com.body[idx:idx+len(target_user)]
+	idx = com.body.lower().find(target.lower())
+	target = com.body[idx:idx+len(target)]
 	r_subreddit = re.compile(r"/?r/[\w\d_]{0,21}")
-	if target_user[:3] == '/u/':
-		target_user = target_user[3:]
-	if target_user == 'YOURUSERNAMEHERE':
+	if target[:3] == '/u/':
+		target = target[3:]
+	if target == 'YOURUSERNAMEHERE':
 		log("Corrected 'YOURUSERNAMEHERE' to %s" % author)
-		target_user = author
-	#log('%s: Started %s for %s on %s' % (id, target_user, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
+		target = author
+	#log('%s: Started %s for %s on %s' % (id, target, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
 	try:
-		next(r.get_redditor(target_user).get_comments(limit=1))
+		next(r.get_redditor(target).get_comments(limit=1))
 	except praw.errors.NotFound:
-		if levenshteinDistance(target_user, author) <3:
-			log("Corrected spelling from %s to %s" % (target_user, author))
-			target_user = author
+		if levenshteinDistance(target, author) <3:
+			log("Corrected spelling from %s to %s" % (target, author))
+			target = author
 	except StopIteration:
 		pass
 	except praw.errors.HTTPException:
