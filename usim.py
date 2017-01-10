@@ -342,7 +342,8 @@ def process(q, com, val, index):
 		target = author
 	#log('%s: Started %s for %s on %s' % (id, target, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
 	try:
-		next(r.get_redditor(target).get_comments(limit=1))
+		if (target[:3] != '/r/'):
+			next(r.get_redditor(target).get_comments(limit=1))
 	except praw.errors.NotFound:
 		if levenshteinDistance(target, author) <3:
 			log("Corrected spelling from %s to %s" % (target, author))
