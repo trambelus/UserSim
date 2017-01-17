@@ -394,7 +394,7 @@ def monitor_sub(q, index):
 	with open(BANNED_FILE, 'r') as f:
 		banned = [s.rstrip() for s in f.readlines()]
 	get_r = lambda: rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, main thread %d" % (platform.system(),VERSION, index))
-	req_pat = re.compile(r"\+(\s)?/u/%s\s?(\[.\])?\s+(/(u|r)/)?[\w\d\-_]{3,20}" % USER.lower())
+	req_pat = re.compile(r"\+(\s)?/u/%s\s?(\[.\])?\s+(/(u|r)/)?[\w\d\-_]{3,32}" % USER.lower())
 	r = get_r()
 	t0 = time.time()
 	log('Started main thread %d' % (index+1))
