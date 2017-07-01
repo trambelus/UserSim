@@ -81,6 +81,7 @@ MONITOR_PROCESSES = 1
 INBOX_LIMIT = 1000*MONITOR_PROCESSES # Max mentions to pull from inbox
 
 NO_REPLY = ['trollabot','ploungersimulator']
+ABSOLUTELY_NO_REPLY = ['automoderator']
 STATE_SIZE = 2
 LOGFILE = 'usim.log'
 NAMEFILE = 'names.log'
@@ -123,7 +124,7 @@ class PText(markovify.Text):
 		"""
 		A basic sentence filter. This one rejects sentences that contain
 		the type of punctuation that would look strange on its own
-		in a randomly-generated sentence. 
+		in a randomly-generated sentence.
 		"""
 		emote_pat = re.compile(r"\[.+?\]\(\/.+?\)")
 		reject_pat = re.compile(r"(^')|('$)|\s'|'\s|([\"(\(\)\[\])])|(github.com/trambelus/UserSim)|(/r/User_Simulator)|(~\ [\w\d\-_]{3,20}\ -----)")
@@ -408,7 +409,9 @@ def monitor_sub(q, index):
 				t0 = time.time()
 			mentions = r.get_inbox(limit=INBOX_LIMIT)
 			for com in mentions:
-				if int(com.name[3:], 36) % MONITOR_PROCESSES != index: 
+				if com.author and com.author.name.lower() in ABSOLUTELY_NO_REPLY:
+					continue # Some joker set AutoModerator to constantly call the bot
+				if int(com.name[3:], 36) % MONITOR_PROCESSES != index:
 					continue # One of the other monitor threads is handling this one; skip
 				if com.name in started:
 					continue # We've already started on this one, move on
@@ -429,7 +432,7 @@ def monitor_sub(q, index):
 						continue # We've already hit this one, move on
 				except praw.errors.Forbidden:
 					continue
-				
+
 				warnings.simplefilter("ignore")
 				try:
 					log("%s: processing" % (com.name), console_only=True)
@@ -450,7 +453,7 @@ def monitor_sub(q, index):
 						started.remove(item)
 
 				time.sleep(1)
-				
+
 		except praw.errors.InvalidComment:
 			continue # This one was completely trashing the console, so handle it silently.
 		except AssertionError:
@@ -473,7 +476,7 @@ def monitor():
 	for i in range(MONITOR_PROCESSES):
 		#mp.Process(target=monitor_sub, args=(q,i)).start()
 		monitor_sub(q,i)
-	
+
 def wait(q):
 	"""
 	Separate thread for responding if the operator presses command keys
