@@ -406,7 +406,7 @@ def monitor_sub(q, index):
 				r = get_r()
 				log("Refreshed login for thread %d" % (index+1))
 				t0 = time.time()
-			mentions = r.get_inbox(limit=INBOX_LIMIT)
+			mentions = r.inbox.all()
 			for com in mentions:
 				if com.author and com.author.name.lower() in ABSOLUTELY_NO_REPLY:
 					continue # Some joker set AutoModerator to constantly call the bot
