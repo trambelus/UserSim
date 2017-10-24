@@ -94,8 +94,7 @@ SRC_URL = 'https://github.com/trambelus/UserSim/blob/master/usim.py'
 
 REFRESH_THRESHOLD = 2*24*60*60
 
-def get_footer():
-	return '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
+FOOTER = '\n\n-----\n\n[^^Info](%s) ^^| [^^Subreddit](%s)' % (INFO_URL, SUB_URL)
 
 
 def log(*msg, additional='', console_only=False):
@@ -136,7 +135,7 @@ class PText(markovify.Text):
 		if re.search(reject_pat, filtered_str):
 			# Not counting emotes, there are no awkward characters.
 			return False
-		if filtered_str in get_footer():
+		if filtered_str in FOOTER:
 			return False
 		return True
 
@@ -328,10 +327,10 @@ def process(q, com, val, index):
 	val = val.replace(chr(160),' ')
 	target = val[val.rfind(' ')+1:].strip()
 	if author.lower() in NO_REPLY:
-		try_reply(com,"I see what you're trying to do.%s" % get_footer())
+		try_reply(com,"I see what you're trying to do.%s" % FOOTER)
 		return
 	if ('+/u/%s' % USER).lower() in target.lower():
-		try_reply(com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,get_footer()))
+		try_reply(com,"User '%s' appears to have broken the bot. That is not nice, %s.%s" % (author,author,FOOTER))
 		return
 	idx = com.body.lower().find(target.lower())
 	target = com.body[idx:idx+len(target)]
@@ -356,17 +355,17 @@ def process(q, com, val, index):
 	(model, sentence_avg) = get_markov(r, id, target)
 	try:
 		if isinstance(model, str):
-			try_reply(com,(model % target) + get_footer())
+			try_reply(com,(model % target) + FOOTER)
 			log('%s: (%d) %s by %s in %s on %s:\n%s' % (id, index, target, author, sub, ctime, model % target), additional='\n')
 		else:
 			if sentence_avg == 0:
-				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target,get_footer()))
+				try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target,FOOTER))
 				return
 			reply_r = []
 			for _ in range(random.randint(1,sentence_avg)):
 				tmp_s = model.make_sentence(tries=TRIES)
 				if tmp_s == None:
-					try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target,get_footer()))
+					try_reply(com,"Couldn't simulate %s: maybe this user is a bot, or has too few unique comments.%s" % (target,FOOTER))
 					return
 				reply_r.append(tmp_s)
 			reply_r = ' '.join(reply_r)
@@ -376,7 +375,7 @@ def process(q, com, val, index):
 			log('%s: (%d) %s (%d) by %s in %s on %s, reply' % (id, index, target, sentence_avg, author, sub, ctime), additional='\n%s\n' % reply)
 			if (target[:3] != '/r/'):
 				target = target.replace('_','\_')
-			try_reply(com,'%s\n\n ~ %s%s' % (reply,target,get_footer()))
+			try_reply(com,'%s\n\n ~ %s%s' % (reply,target,FOOTER))
 		#log('%s: Finished' % id)
 	except praw.errors.RateLimitExceeded as ex:
 		log("%s: (%d) %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, index, target, sentence_avg, author, sub, ctime, str(ex)))
@@ -428,7 +427,7 @@ def monitor_sub(q, index):
 				if res == None:
 					continue # We were mentioned but it's not a proper request, move on
 				try:
-					if USER.lower() in [rep.author.name.lower() for rep in com.replies if rep.author != None]:
+					if USER.lower() in [rep.author.name.lower() for rep in com.replies.list() if rep.author != None]:
 						continue # We've already hit this one, move on
 				except praw.errors.Forbidden:
 					continue
@@ -454,8 +453,6 @@ def monitor_sub(q, index):
 
 				time.sleep(1)
 
-		except praw.errors.InvalidComment:
-			continue # This one was completely trashing the console, so handle it silently.
 		except AssertionError:
 			r = get_r()
 			continue
@@ -538,7 +535,7 @@ def get_user_top(sort):
 def open_by_id(id):
 	import webbrowser
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, updating local user cache" % (platform.system(),VERSION))
-	webbrowser.open_new_tab(r.get_info(thing_id=id).permalink)
+	webbrowser.open_new_tab("http://www.reddit.com{}".format(r.comment(id).context))
 
 def get_banned():
 	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, updating local user cache" % (platform.system(),VERSION))
