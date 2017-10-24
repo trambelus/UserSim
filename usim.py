@@ -159,11 +159,11 @@ class PText(markovify.Text):
 
 def get_comments(r, source, limit):
 	if (source[:3]) == '/r/':
-		sub = r.get_subreddit(source[3:])
-		return sub.get_comments(limit=limit, sort='new')
+		sub = r.subreddit(source[3:])
+		return sub.comments(limit=limit)
 	else:
-		redditor = r.get_redditor(source)
-		return redditor.get_comments(limit=limit)
+		redditor = r.redditor(source)
+		return redditor.comments.new(limit=limit)
 
 def get_history(r, source, limit=LIMIT, subreddit=None):
 	"""
@@ -307,7 +307,7 @@ def try_reply(com, msg):
 def dfmt(created_utc):
 	return time.strftime("%Y-%m-%d %X",time.localtime(created_utc))
 
-def process(q, com, val, index):
+def process(q, com, val, index, r=None):
 	"""
 	Multiprocessing target. Gets the Markov model, uses it to get a sentence, and posts that as a reply.
 	"""
@@ -316,8 +316,9 @@ def process(q, com, val, index):
 		return
 	id = com.name
 	author = com.author.name if com.author else '[deleted]'
-	r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (platform.system(),VERSION,author))
-	com = r.get_info(thing_id=id)
+	if r is None:
+		r = rlogin.get_auth_r(USER, APP, VERSION, uas="%s:User Simulator/v%s by /u/Trambelus, operating on behalf of %s" % (platform.system(),VERSION,author))
+
 	if com == None:
 		return
 	sub = com.subreddit.display_name
@@ -436,7 +437,7 @@ def monitor_sub(q, index):
 				try:
 					log("%s: processing" % (com.name), console_only=True)
 					#mp.Process(target=process, args=(q, com, res.group(0), index+1)).start()
-					process(q, com, res.group(0), index+1)
+					process(q, com, res.group(0), index+1, r)
 				except Exception as ex:
 					log("%s: exception: %s" % (com.name, ex))
 					continue
