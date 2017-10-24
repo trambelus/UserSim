@@ -52,6 +52,7 @@ def silent():
 import markovify
 import re
 import praw
+import prawcore
 import multiprocessing as mp
 import time
 import rlogin
@@ -191,21 +192,19 @@ def get_history(r, source, limit=LIMIT, subreddit=None):
 							# Ain't no way I'm letting a little feature like this screw up my processing, no matter what happens
 							total_sentences += 1
 				c_finished = True
-			except praw.errors.InvalidSubreddit:
-				return (None, None, None)
-			except praw.errors.HTTPException as ex:
+			except praw.exceptions.PRAWException as ex:
 				log(str(ex))
 				pass
-			except praw.errors.NotFound as ex:
-				break
 		num_comments = len(body)
 		if num_comments >= MIN_COMMENTS and recursion_testing:
 			return (0, 0, 0)
 		sentence_avg = total_sentences / num_comments if num_comments > 0 else 0
 		body = ' '.join(body)
 		return (body, num_comments, sentence_avg)
-	except praw.errors.NotFound:
-		return (None, None, None)
+
+	except praw.exceptions.PRAWException as ex:
+		log(str(ex))
+		pass
 
 def levenshteinDistance(s1,s2):
 	if len(s1) > len(s2):
@@ -344,14 +343,14 @@ def process(q, com, val, index, r=None):
 	#log('%s: Started %s for %s on %s' % (id, target, author, time.strftime("%Y-%m-%d %X",time.localtime(com.created_utc))))
 	try:
 		if (target[:3] != '/r/'):
-			next(r.get_redditor(target).get_comments(limit=1))
-	except praw.errors.NotFound:
+			next(r.redditor(target).comments.new(limit=1))
+	except prawcore.exceptions.NotFound:
 		if levenshteinDistance(target, author) <3:
 			log("Corrected spelling from %s to %s" % (target, author))
 			target = author
 	except StopIteration:
 		pass
-	except praw.errors.HTTPException:
+	except praw.exceptions.APIException:
 		time.sleep(1)
 	(model, sentence_avg) = get_markov(r, id, target)
 	try:
@@ -378,14 +377,11 @@ def process(q, com, val, index, r=None):
 				target = target.replace('_','\_')
 			try_reply(com,'%s\n\n ~ %s%s' % (reply,target,FOOTER))
 		#log('%s: Finished' % id)
-	except praw.errors.RateLimitExceeded as ex:
-		log("%s: (%d) %s (%d) by %s in %s on %s: rate limit exceeded: %s" % (id, index, target, sentence_avg, author, sub, ctime, str(ex)))
-		q.put(id)
-	except praw.errors.Forbidden as ex:
+	except prawcore.exceptions.Forbidden as ex:
 		log("Could not reply to comment by %s in %s: %s" % (author, sub, str(ex)))
-	except praw.errors.APIException:
+	except prawcore.exceptions.APIException:
 		log("Parent comment by %s in %s was deleted" % (author, sub))
-	except praw.errors.HTTPException:
+	except prawcore.exceptions.PrawcoreException as ex:
 		log("%s: (%d) %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, index, target, sentence_avg, author, sub, ctime, str(ex)))
 		q.put(id)
 
@@ -422,7 +418,7 @@ def monitor_sub(q, index):
 					if com.subreddit.display_name in banned:
 						log("%s: (%d) Ignored request from banned subreddit %s" % (com.name,index+1,com.subreddit.display_name))
 						continue
-				except praw.errors.Forbidden:
+				except prawcore.exceptions.Forbidden:
 					continue
 				res = re.search(req_pat, com.body.lower())
 				if res == None:
@@ -430,7 +426,7 @@ def monitor_sub(q, index):
 				try:
 					if USER.lower() in [rep.author.name.lower() for rep in com.replies.list() if rep.author != None]:
 						continue # We've already hit this one, move on
-				except praw.errors.Forbidden:
+				except prawcore.exceptions.Forbidden:
 					continue
 
 				warnings.simplefilter("ignore")
@@ -548,7 +544,7 @@ def get_banned():
 			try:
 				b = r.get_subreddit(sub).subscribers
 				c += b
-			except praw.errors.Forbidden:
+			except prawcore.exceptions.Forbidden:
 				b = "Unknown"
 			f.write("%s: %s\n" % (sub, b))
 		f.write("----------------\nTotal: %d" % c)
