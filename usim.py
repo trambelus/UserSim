@@ -335,6 +335,8 @@ def process(q, com, val, index, r=None):
 	idx = com.body.lower().find(target.lower())
 	target = com.body[idx:idx+len(target)]
 	r_subreddit = re.compile(r"/?r/[\w\d_]{0,21}")
+	if target[:2] == 'u/':
+		target = target[2:] # ugly but it works
 	if target[:3] == '/u/':
 		target = target[3:]
 	if target == 'YOURUSERNAMEHERE':
