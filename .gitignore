@@ -41,7 +41,10 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
-*.txt
 *.pyc
 *.log
 score.py
+banned.txt
+pw.txt
+secrets.txt
+
