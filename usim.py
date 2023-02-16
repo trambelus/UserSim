@@ -381,7 +381,7 @@ def process(q, com, val, index, r=None):
 		#log('%s: Finished' % id)
 	except prawcore.exceptions.Forbidden as ex:
 		log("Could not reply to comment by %s in %s: %s" % (author, sub, str(ex)))
-	except prawcore.exceptions.APIException:
+	except praw.exceptions.APIException:
 		log("Parent comment by %s in %s was deleted" % (author, sub))
 	except prawcore.exceptions.PrawcoreException as ex:
 		log("%s: (%d) %s (%d) by %s in %s on %s: could not reply, will retry: %s" % (id, index, target, sentence_avg, author, sub, ctime, str(ex)))
